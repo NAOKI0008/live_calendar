@@ -101,8 +101,6 @@ h3{margin:0;font-size:19px;font-weight:800;line-height:1.3}
 .btn.p{background:var(--pk);color:#fff;border-color:var(--pk)}
 .btn.d{color:#c0392b}
 label{display:block;font-size:12px;color:var(--mut);margin:12px 0 4px}
-.radio-group{display:flex;gap:16px;margin:8px 0 12px}
-.radio-group label{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ink);cursor:pointer;margin:0}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .auth{max-width:420px;margin:0 auto;padding:28px 18px}
 .auth h2{font-size:24px;margin:0 0 4px}
@@ -195,7 +193,6 @@ function render(){
  const site=getActiveSite();
  const hb=safe(site.header_url)?' style="background-image:linear-gradient(rgba(20,10,40,.1),rgba(20,10,40,.55)),url(\''+safe(site.header_url)+'\')"':'';
  
- /* ヘルパー修正：タイトル撤廃、左下に切り替えボタン、右下にプロフィール＆設定 */
  let h='<div class="hero"'+hb+'>'
  +'<div class="genre-bar"><button class="'+(currentGenre==='live'?'active':'')+'" onclick="currentGenre=\'live\';selDate=null;render()">ライブ</button><button class="'+(currentGenre==='comedy'?'active':'')+'" onclick="currentGenre=\'comedy\';selDate=null;render()">お笑い</button></div>'
  +'<div class="me"><button class="chip" onclick="myPage()">'+av(prof)+esc(prof&&prof.username)+'</button>'+(host?'<button onclick="siteM()">設定</button>':'')+'</div>'
@@ -281,76 +278,72 @@ function detail(id){
 }
 function formM(id){
  const l=lives.find(x=>x.id===id)||{};const v=k=>esc(l[k]||'');
- const isComedy=currentGenre==='comedy';
- const defaultSub=l.sub_genre||(isComedy?currentSubGenre:'comedy_live');
+ 
+ // 編集の場合は既存データのジャンル、新規追加の場合は現在開いているタブに合わせる
+ const g = id ? (l.genre || 'live') : currentGenre;
+ const sub = id ? (l.sub_genre || 'comedy_live') : currentSubGenre;
+ const isTv = (g === 'comedy' && sub === 'comedy_tv');
+ const isLive = (g === 'live');
 
  const f=(k,t,lab,ph)=>'<label>'+lab+'</label><input id="f_'+k+'" type="'+t+'" value="'+(t==='datetime-local'?esc(loc(l[k])):v(k))+'"'+(ph?' placeholder="'+ph+'"':'')+'>';
  
- openM('<h3>'+(id?'イベントを編集':'イベントを追加')+'</h3>'
- +'<label>ジャンル</label><select id="f_genre" onchange="toggleFormFields()"><option value="live"'+((l.genre||currentGenre)==='live'?' selected':'')+'>ライブ（音楽など）</option><option value="comedy"'+((l.genre||currentGenre)==='comedy'?' selected':'')+'>お笑い</option></select>'
- 
- +'<div id="comedy_options" style="display:'+(isComedy?'block':'none')+'"><label>お笑いの種類</label>'
- +'<div class="radio-group"><label><input type="radio" name="f_sub" value="comedy_live" '+(defaultSub==='comedy_live'?'checked':'')+' onchange="toggleFormFields()"> お笑いライブ</label>'
- +'<label><input type="radio" name="f_sub" value="comedy_tv" '+(defaultSub==='comedy_tv'?'checked':'')+' onchange="toggleFormFields()"> 番組出演・観覧</label></div></div>'
+ let titleText = id ? 'イベントを編集' : (isLive ? 'ライブを追加' : (sub === 'comedy_live' ? 'お笑いライブを追加' : '番組出演・観覧を追加'));
 
- +'<div id="field_common">'
- +f('title','text','名称（公演名 または 番組名・必須）')
- +f('tv_station','text','テレビ局（番組出演・観覧の場合）')
- +f('venue','text','会場名')
- +f('map_url','url','マップURL','https://')
- +f('image_url','url','画像URL（フライヤーなど）','https://')
- +'</div>'
+ let h = '<h3>'+titleText+'</h3>';
 
- +'<div id="field_date_live">'
- +f('live_date','date','公演日 / 収録日')
- +'<div class="two"><div>'+f('open_time','time','OPEN')+'</div><div>'+f('start_time','time','START')+'</div></div>'
- +'<label>形式</label><select id="f_format"><option value="">選択なし</option>'+['主催','対バン','フェス','単独ライブ','ライブ・寄席'].map(o=>'<option'+(l.format===o?' selected':'')+'>'+o+'</option>').join('')+'</select>'
- +f('ticket_type','text','チケット種別','ローチケ など')
- +f('apply_start','datetime-local','申込開始')
- +f('apply_end','datetime-local','申込締切')
- +f('result_date','date','当落発表日')
- +f('issue_date','date','発券開始日')
- +'</div>'
-
- +'<div id="field_date_tv" style="display:none">'
- +f('broadcast_date','date','公開日')
- +'<label>時間（例: 0:00〜0:00）</label><input id="f_tv_time" type="text" value="'+v('start_time')+'" placeholder="0:00〜0:00">'
- +'</div>'
-
- +'<label>メモ（URLは自動でリンクになります）</label><textarea id="f_memo">'+v('memo')+'</textarea>'
- +'<label>セトリ・内容メモ</label><textarea id="f_setlist">'+v('setlist')+'</textarea>'
- +'<button class="btn p" onclick="saveLive('+(id?'\''+id+'\'':'null')+')">保存する</button><button class="btn" onclick="closeM()">キャンセル</button>');
-
- setTimeout(toggleFormFields,10);
-}
-function toggleFormFields(){
- const g=$('#f_genre').value;
- const comedyOpts=$('#comedy_options');
- if(comedyOpts) comedyOpts.style.display=(g==='comedy'?'block':'none');
- 
- const subRadios=document.querySelectorAll('input[name="f_sub"]');
- let sub='comedy_live';
- subRadios.forEach(r=>{if(r.checked)sub=r.value;});
-
- const dl=$('#field_date_live');
- const dt=$('#field_date_tv');
- 
- if(g==='comedy' && sub==='comedy_tv'){
-  if(dl)dl.style.display='none';
-  if(dt)dt.style.display='block';
- }else{
-  if(dl)dl.style.display='block';
-  if(dt)dt.style.display='none';
+ if(isLive){
+  // 1. 音楽ライブ用フォーム
+  h += f('title','text','公演名（必須）')
+    +  f('venue','text','会場名')
+    +  f('map_url','url','マップURL','https://')
+    +  f('image_url','url','画像URL（フライヤーなど）','https://')
+    +  f('live_date','date','公演日')
+    +  '<div class="two"><div>'+f('open_time','time','OPEN')+'</div><div>'+f('start_time','time','START')+'</div></div>'
+    +  '<label>ライブ形式</label><select id="f_format"><option value="">選択なし</option>'+['主催','対バン','フェス'].map(o=>'<option'+(l.format===o?' selected':'')+'>'+o+'</option>').join('')+'</select>'
+    +  f('ticket_type','text','チケット種別','ローチケ など')
+    +  f('apply_start','datetime-local','申込開始')
+    +  f('apply_end','datetime-local','申込締切')
+    +  f('result_date','date','当落発表日')
+    +  f('issue_date','date','発券開始日')
+    +  '<label>メモ（URLは自動でリンクになります）</label><textarea id="f_memo">'+v('memo')+'</textarea>'
+    +  '<label>セトリ</label><textarea id="f_setlist">'+v('setlist')+'</textarea>';
+ } else if(!isTv) {
+  // 2. お笑いライブ用フォーム
+  h += f('title','text','公演名（必須）')
+    +  f('venue','text','会場名')
+    +  f('map_url','url','マップURL','https://')
+    +  f('image_url','url','画像URL（フライヤーなど）','https://')
+    +  f('live_date','date','公演日')
+    +  '<div class="two"><div>'+f('open_time','time','OPEN')+'</div><div>'+f('start_time','time','START')+'</div></div>'
+    +  '<label>ライブ形式</label><select id="f_format"><option value="">選択なし</option>'+['単独ライブ','ライブ・寄席'].map(o=>'<option'+(l.format===o?' selected':'')+'>'+o+'</option>').join('')+'</select>'
+    +  f('ticket_type','text','チケット種別','ローチケ など')
+    +  f('apply_start','datetime-local','申込開始')
+    +  f('apply_end','datetime-local','申込締切')
+    +  f('result_date','date','当落発表日')
+    +  f('issue_date','date','発券開始日')
+    +  '<label>メモ（URLは自動でリンクになります）</label><textarea id="f_memo">'+v('memo')+'</textarea>'
+    +  '<label>内容メモ</label><textarea id="f_setlist">'+v('setlist')+'</textarea>';
+ } else {
+  // 3. 番組出演・観覧用フォーム
+  h += f('title','text','番組名（必須）')
+    +  f('tv_station','text','テレビ局')
+    +  f('venue','text','会場名')
+    +  f('map_url','url','マップURL','https://')
+    +  f('image_url','url','画像URL（フライヤーなど）','https://')
+    +  f('live_date','date','収録日')
+    +  f('broadcast_date','date','公開日')
+    +  '<label>時間（例: 0:00〜0:00）</label><input id="f_tv_time" type="text" value="'+v('start_time')+'" placeholder="0:00〜0:00">'
+    +  '<label>メモ（URLは自動でリンクになります）</label><textarea id="f_memo">'+v('memo')+'</textarea>'
+    +  '<label>内容メモ</label><textarea id="f_setlist">'+v('setlist')+'</textarea>';
  }
-}
-async function saveLive(id){
- const g=$('#f_genre').value;
- const subs=document.querySelectorAll('input[name="f_sub"]');
- let sub='comedy_live';
- subs.forEach(r=>{if(r.checked)sub=r.value;});
 
- const getv=k=>{const x=$('#f_'+k).value.trim();return x===''?null:x};
- const o={genre:g, sub_genre:(g==='comedy'?sub:'comedy_live')};
+ h += '<button class="btn p" onclick="saveLive(\''+(id||'')+'\',\''+g+'\',\''+sub+'\')">保存する</button><button class="btn" onclick="closeM()">キャンセル</button>';
+ openM(h);
+}
+
+async function saveLive(id, genre, subGenre){
+ const getv=k=>{const el=$('#f_'+k);return el?el.value.trim():null};
+ const o={genre: genre, sub_genre: subGenre};
 
  o.title=getv('title');
  if(!o.title)return toast('名称は必須です');
@@ -361,7 +354,7 @@ async function saveLive(id){
  o.memo=getv('memo');
  o.setlist=getv('setlist');
 
- if(g==='comedy' && sub==='comedy_tv'){
+ if(genre==='comedy' && subGenre==='comedy_tv'){
   o.live_date=getv('live_date');
   o.tv_station=getv('tv_station');
   o.broadcast_date=getv('broadcast_date');
