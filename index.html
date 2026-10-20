@@ -146,7 +146,7 @@ async function doAuth(){
   if(!code)return toast('招待コードを入力してください');
   const check=await sb.from('invitation_codes').select('code').eq('code',code).maybeSingle();
   if(!check.data)return toast('招待コードが違います');
-  const username=$('#un}.value.trim()||'名無し';
+  const username=$('#un').value.trim()||'名無し';
   r=await sb.auth.signUp({email,password,options:{data:{username,icon_url:null}}});
   if(!r.error&&!r.data.session)return toast('確認メールを送信しました。メール内のリンクを開いてください');
  }else r=await sb.auth.signInWithPassword({email,password});
@@ -321,7 +321,7 @@ function formM(id){
 function toggleFormFields(){
  const g=$('#f_genre').value;
  const comedyOpts=$('#comedy_options');
- if(comedyOpts) comedyOpts.style.display=(g==='comedy'?'block':'display:none'? 'block':'none');
+ if(comedyOpts) comedyOpts.style.display=(g==='comedy'?'block':'none');
  
  const subRadios=document.querySelectorAll('input[name="f_sub"]');
  let sub='comedy_live';
@@ -329,7 +329,6 @@ function toggleFormFields(){
 
  const dl=$('#field_date_live');
  const dt=$('#field_date_tv');
- const tvSt=$('#f_tv_station').closest('div') || $('#f_tv_station'); 
  
  if(g==='comedy' && sub==='comedy_tv'){
   if(dl)dl.style.display='none';
