@@ -45,7 +45,7 @@ a{color:var(--vi);word-break:break-all}
 /* スワイプアクション用コンテナ */
 .swipe-wrap{position:relative;overflow:hidden;border-radius:18px;margin-bottom:14px;background:#95a5a6}
 .swipe-wrap.is-hid{background:var(--vi)}
-.swipe-action{position:absolute;right:0;top:0;bottom:0;width:100px;background:#95a5a6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;z-index:1;cursor:pointer}
+.swipe-action{position:absolute;right:0;top:0;bottom:0;width:100px;background:#95a5a6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;z-index:1;cursor:pointer;-webkit-tap-highlight-color:rgba(0,0,0,0.1)}
 .swipe-wrap.is-hid .swipe-action{background:var(--vi)}
 
 .card{position:relative;z-index:2;background:#fff;border-radius:18px;padding:16px;margin-bottom:0;box-shadow:0 2px 14px rgba(70,40,120,.07);transition:transform 0.25s ease}
@@ -248,7 +248,7 @@ function numView(){
   const n=nums[x.id]||{};const hd=n.hidden;
   const isSwiped=activeSwipeId===x.id;
   return '<div class="swipe-wrap'+(hd?' is-hid':'')+'">'
-   +'<div class="swipe-action" onclick="setHid(\''+x.id+'\','+!hd+')">'+(hd?'表示':'非表示')+'</div>'
+   +'<div class="swipe-action" ontouchend="setHid(\''+x.id+'\','+!hd+');event.stopPropagation()" onclick="setHid(\''+x.id+'\','+!hd+')">'+(hd?'表示':'非表示')+'</div>'
    +'<div class="card num'+(hd?' hid':'')+(isSwiped?' swiped':'')+'" ontouchstart="tx=event.touches[0].clientX" ontouchend="swipe(event,\''+x.id+'\')" onclick="if(activeSwipeId===\''+x.id+'\'){activeSwipeId=null;render()}else{numM(\''+x.id+'\')}">'
    +'<div class="grow"><b style="color:var(--pk)">'+fd(x.live_date)+'</b><h3 style="font-size:17px">'+esc(x.title)+'</h3><p class="mut">📍 '+esc(x.venue||'会場未定')+'</p></div>'
    +'<div class="nb"><small>整理番号 / 座席</small><b>'+esc(n.number||'—')+'</b></div>'
@@ -257,9 +257,9 @@ function numView(){
 }
 function sorted0(){return [...lives].sort((a,b)=>(a.live_date||'9999').localeCompare(b.live_date||'9999'))}
 function swipe(e,id){
- if(e.changedTouches[0].clientX-tx<-50){
+ if(e.changedTouches[0].clientX-tx<-40){
   activeSwipeId=id;render();
- }else if(e.changedTouches[0].clientX-tx>50&&activeSwipeId===id){
+ }else if(e.changedTouches[0].clientX-tx>40&&activeSwipeId===id){
   activeSwipeId=null;render();
  }
 }
