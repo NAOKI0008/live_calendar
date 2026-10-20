@@ -16,18 +16,22 @@ input,select,textarea{font:inherit;font-size:16px;width:100%;padding:10px 12px;b
 textarea{min-height:84px;resize:vertical}
 a{color:var(--vi);word-break:break-all}
 :focus-visible{outline:3px solid var(--vi);outline-offset:2px}
-.hero{height:160px;background:linear-gradient(135deg,#2a1559 0%,#6d3fd1 55%,#d6458f 120%);color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:16px;background-size:cover;background-position:center}
-.herotop{display:flex;justify-content:space-between;align-items:center;width:100%}
-.herotop h1{margin:0;font-size:22px;font-weight:900;letter-spacing:.02em;line-height:1.15}
-.me{display:flex;align-items:center;gap:6px;font-size:12px}
-.me button{background:rgba(255,255,255,.2);padding:4px 10px;border-radius:99px;font-size:12px}
+
+/* ヘッダー周り（タイトル撤廃＆左右配置） */
+.hero{height:140px;background:linear-gradient(135deg,#2a1559 0%,#6d3fd1 55%,#d6458f 120%);color:#fff;display:flex;align-items:flex-end;justify-content:space-between;padding:16px;background-size:cover;background-position:center}
 .genre-bar{display:flex;gap:8px}
 .genre-bar button{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.3);padding:6px 14px;border-radius:99px;font-size:13px;font-weight:700;color:#fff}
 .genre-bar button.active{background:#fff;color:var(--vi);border-color:#fff}
+
+.me{display:flex;align-items:center;gap:6px;font-size:12px}
+.me button{background:rgba(255,255,255,.2);padding:6px 12px;border-radius:99px;font-size:12px;color:#fff;font-weight:700}
+.chip{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.2)!important;padding:4px 10px!important}
+.chip .av{margin:0;width:22px;height:22px;font-size:11px}
+
 .sub-genre-tabs{display:flex;background:#fff;border-bottom:1px solid var(--line);padding:0 14px;gap:16px}
 .sub-genre-tabs button{height:40px;font-weight:700;color:var(--mut);border-bottom:2px solid transparent;background:none}
 .sub-genre-tabs button.active{color:var(--pk);border-color:var(--pk)}
-.chip{display:flex;align-items:center;gap:6px}.chip .av{margin:0;width:22px;height:22px;font-size:11px}
+
 .cal{position:sticky;top:calc(env(safe-area-inset-top,0px) + 49px);z-index:4;background:var(--bg);margin:-14px -14px 10px;padding:6px 14px 8px;border-bottom:1px solid var(--line)}
 .calh{display:flex;justify-content:space-between;align-items:center}
 .calh b{font-size:16px}
@@ -191,10 +195,11 @@ function render(){
  const site=getActiveSite();
  const hb=safe(site.header_url)?' style="background-image:linear-gradient(rgba(20,10,40,.1),rgba(20,10,40,.55)),url(\''+safe(site.header_url)+'\')"':'';
  
+ /* ヘルパー修正：タイトル撤廃、左下に切り替えボタン、右下にプロフィール＆設定 */
  let h='<div class="hero"'+hb+'>'
- +'<div class="herotop"><h1>'+(site.title?esc(site.title):(currentGenre==='live'?'ライブカレンダー':'お笑いカレンダー'))+'</h1>'
- +'<div class="me"><div class="genre-bar"><button class="'+(currentGenre==='live'?'active':'')+'" onclick="currentGenre=\'live\';selDate=null;render()">ライブ</button><button class="'+(currentGenre==='comedy'?'active':'')+'" onclick="currentGenre=\'comedy\';selDate=null;render()">お笑い</button></div>'
- +'<button class="chip" onclick="myPage()">'+av(prof)+esc(prof&&prof.username)+'</button>'+(host?'<button onclick="siteM()">設定</button>':'')+'</div></div></div>';
+ +'<div class="genre-bar"><button class="'+(currentGenre==='live'?'active':'')+'" onclick="currentGenre=\'live\';selDate=null;render()">ライブ</button><button class="'+(currentGenre==='comedy'?'active':'')+'" onclick="currentGenre=\'comedy\';selDate=null;render()">お笑い</button></div>'
+ +'<div class="me"><button class="chip" onclick="myPage()">'+av(prof)+esc(prof&&prof.username)+'</button>'+(host?'<button onclick="siteM()">設定</button>':'')+'</div>'
+ +'</div>';
 
  if(currentGenre==='comedy'){
   h+='<div class="sub-genre-tabs"><button class="'+(currentSubGenre==='comedy_live'?'active':'')+'" onclick="currentSubGenre=\'comedy_live\';selDate=null;render()">お笑いライブ</button><button class="'+(currentSubGenre==='comedy_tv'?'active':'')+'" onclick="currentSubGenre=\'comedy_tv\';selDate=null;render()">番組出演・観覧</button></div>';
@@ -494,14 +499,13 @@ async function savePw(){
 }
 function siteM(){
  const site=getActiveSite();
- openM('<h3>サイト設定 ('+(currentGenre==='live'?'ライブ':'お笑い')+')</h3><label>タイトル（空欄で非表示）</label><textarea id="st" style="min-height:64px">'+esc(site.title||'')+'</textarea>'
- +'<label>ヘッダー画像のURL</label><input id="sh" value="'+esc(site.header_url||'')+'" placeholder="https://...">'
+ openM('<h3>サイト設定 ('+(currentGenre==='live'?'ライブ':'お笑い')+')</h3><label>ヘッダー画像のURL</label><input id="sh" value="'+esc(site.header_url||'')+'" placeholder="https://...">'
  +'<button class="btn p" onclick="saveSite()">保存する</button><button class="btn" onclick="closeM()">キャンセル</button>');
 }
 async function saveSite(){
  const r=await sb.from('site_settings').upsert({
   genre: currentGenre,
-  title: $('#st').value.trim(),
+  title: '',
   header_url: $('#sh').value.trim()||null
  }, {onConflict: 'genre'});
  if(r.error)return toast('失敗: '+r.error.message);
