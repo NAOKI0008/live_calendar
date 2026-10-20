@@ -279,7 +279,6 @@ function detail(id){
 function formM(id){
  const l=lives.find(x=>x.id===id)||{};const v=k=>esc(l[k]||'');
  
- // 編集の場合は既存データのジャンル、新規追加の場合は現在開いているタブに合わせる
  const g = id ? (l.genre || 'live') : currentGenre;
  const sub = id ? (l.sub_genre || 'comedy_live') : currentSubGenre;
  const isTv = (g === 'comedy' && sub === 'comedy_tv');
@@ -292,7 +291,6 @@ function formM(id){
  let h = '<h3>'+titleText+'</h3>';
 
  if(isLive){
-  // 1. 音楽ライブ用フォーム
   h += f('title','text','公演名（必須）')
     +  f('venue','text','会場名')
     +  f('map_url','url','マップURL','https://')
@@ -308,14 +306,13 @@ function formM(id){
     +  '<label>メモ（URLは自動でリンクになります）</label><textarea id="f_memo">'+v('memo')+'</textarea>'
     +  '<label>セトリ</label><textarea id="f_setlist">'+v('setlist')+'</textarea>';
  } else if(!isTv) {
-  // 2. お笑いライブ用フォーム
   h += f('title','text','公演名（必須）')
     +  f('venue','text','会場名')
     +  f('map_url','url','マップURL','https://')
     +  f('image_url','url','画像URL（フライヤーなど）','https://')
     +  f('live_date','date','公演日')
     +  '<div class="two"><div>'+f('open_time','time','OPEN')+'</div><div>'+f('start_time','time','START')+'</div></div>'
-    +  '<label>ライブ形式</label><select id="f_format"><option value="">選択なし</option>'+['単独ライブ','ライブ・寄席'].map(o=>'<option'+(l.format===o?' selected':'')+'>'+o+'</option>').join('')+'</select>'
+    +  '<label>ライブ形式</label><select id="f_format"><option value="">選択なし</option>'+['単独ライブ','ライブ・寄席','主催','対バン'].map(o=>'<option'+(l.format===o?' selected':'')+'>'+o+'</option>').join('')+'</select>'
     +  f('ticket_type','text','チケット種別','ローチケ など')
     +  f('apply_start','datetime-local','申込開始')
     +  f('apply_end','datetime-local','申込締切')
@@ -324,7 +321,6 @@ function formM(id){
     +  '<label>メモ（URLは自動でリンクになります）</label><textarea id="f_memo">'+v('memo')+'</textarea>'
     +  '<label>内容メモ</label><textarea id="f_setlist">'+v('setlist')+'</textarea>';
  } else {
-  // 3. 番組出演・観覧用フォーム
   h += f('title','text','番組名（必須）')
     +  f('tv_station','text','テレビ局')
     +  f('venue','text','会場名')
@@ -342,7 +338,14 @@ function formM(id){
 }
 
 async function saveLive(id, genre, subGenre){
- const getv=k=>{const el=$('#f_'+k);return el?el.value.trim():null};
+ // 空文字をnullに正しく変換する関数
+ const getv=k=>{
+  const el=$('#f_'+k);
+  if(!el) return null;
+  const val = el.value.trim();
+  return val === '' ? null : val;
+ };
+ 
  const o={genre: genre, sub_genre: subGenre};
 
  o.title=getv('title');
