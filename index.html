@@ -112,7 +112,7 @@ function authView(){
  const up=authMode==='up';
  $('#app').innerHTML='<div class="auth"><h2>ライブカレンダー</h2>'
  +(up?'<label>招待コード（合言葉）</label><input id="code" placeholder="幹事に確認してください">'
- +'<label>ユーザー名（みんなに表示されます）</label><input id="un" maxlength="20"><label>アイコン画像のURL（任意）</label><input id="ic" placeholder="https://...">':'')
+ +'<label>ユーザー名（みんなに表示されます）</label><input id="un" maxlength="20">':'')
  +'<label>メールアドレス</label><input id="em" type="email" autocomplete="email"><label>パスワード（6文字以上）</label><input id="pw" type="password" autocomplete="'+(up?'new-password':'current-password')+'">'
  +'<button class="btn p" onclick="doAuth()">'+(up?'登録する':'ログイン')+'</button>'
  +'<button class="btn" onclick="authMode=\''+(up?'in':'up')+'\';authView()">'+(up?'ログイン画面へ':'新しく登録する')+'</button></div>';
@@ -126,8 +126,8 @@ async function doAuth(){
   if(!code)return toast('招待コードを入力してください');
   const check=await sb.from('invitation_codes').select('code').eq('code',code).maybeSingle();
   if(!check.data)return toast('招待コードが違います');
-  const username=$('#un').value.trim()||'名無し',icon_url=$('#ic').value.trim()||null;
-  r=await sb.auth.signUp({email,password,options:{data:{username,icon_url}}});
+  const username=$('#un').value.trim()||'名無し';
+  r=await sb.auth.signUp({email,password,options:{data:{username,icon_url:null}}});
   if(!r.error&&!r.data.session)return toast('確認メールを送信しました。メール内のリンクを開いてください');
  }else r=await sb.auth.signInWithPassword({email,password});
  if(r.error)toast('失敗: '+r.error.message);
@@ -257,7 +257,7 @@ async function saveNum(id){
 function myPage(){
  openM('<h3>マイページ</h3><div class="who">'+av(prof)+'<b>'+esc(prof.username)+'</b></div>'
  +'<label>ユーザー名</label><input id="mu" maxlength="20" value="'+esc(prof.username)+'">'
- +'<label>プロフィール画像のURL</label><input id="mi" value="'+esc(prof.icon_url||'')+'" placeholder="https://...">'
+ +'<label>プロフィール画像（タップして写真を選択）</label><input id="mfile" type="file" accept="image/*">'
  +'<button class="btn p" onclick="saveMe()">プロフィールを保存</button>'
  +'<label>メールアドレス</label><input id="me_" type="email" value="'+esc(me.email)+'">'
  +'<button class="btn" onclick="saveEmail()">メールアドレスを変更</button>'
@@ -265,8 +265,39 @@ function myPage(){
  +'<button class="btn" onclick="savePw()">パスワードを変更</button>'
  +'<button class="btn d" onclick="closeM();sb.auth.signOut()">ログアウト</button><button class="btn" onclick="closeM()">閉じる</button>');
 }
+function resizeImg(file){
+ return new Promise((res,rej)=>{
+  const img=new Image(),reader=new FileReader();
+  reader.onload=e=>img.src=e.target.result;
+  reader.onerror=rej;
+  img.onload=()=>{
+   const canvas=document.createElement('canvas');
+   let w=img.width,h=img.height,max=300;
+   if(w>h){if(w>max){h=Math.round(h*max/w);w=max}}else{if(h>max){w=Math.round(w*max/h);h=max}}
+   canvas.width=w;canvas.height=h;
+   const ctx=canvas.getContext('2d');
+   ctx.drawImage(img,0,0,w,h);
+   canvas.toBlob(b=>res(b),'image/jpeg',0.85);
+  };
+  reader.readAsDataURL(file);
+ });
+}
 async function saveMe(){
- const r=await sb.from('profiles').update({username:$('#mu').value.trim()||'名無し',icon_url:$('#mi').value.trim()||null}).eq('id',me.id);
+ const username=$('#mu').value.trim()||'名無し';
+ let icon_url=prof.icon_url||null;
+ const fileInput=$('#mfile');
+ if(fileInput.files&&fileInput.files[0]){
+  toast('画像を圧縮してアップロード中...');
+  try{
+   const blob=await resizeImg(fileInput.files[0]);
+   const path=me.id+'.jpg';
+   const up=await sb.storage.from('avatars').upload(path,blob,{contentType:'image/jpeg',upsert:true});
+   if(up.error)return toast('画像失敗: '+up.error.message);
+   const pub=sb.storage.from('avatars').getPublicUrl(path);
+   icon_url=pub.data.publicUrl+'?v='+Date.now();
+  }catch(err){return toast('画像処理に失敗しました')}
+ }
+ const r=await sb.from('profiles').update({username,icon_url}).eq('id',me.id);
  if(r.error)return toast('失敗: '+r.error.message);
  closeM();toast('保存しました');load();
 }
