@@ -44,10 +44,11 @@ a{color:var(--vi);word-break:break-all}
 
 /* スワイプアクション用コンテナ */
 .swipe-wrap{position:relative;overflow:hidden;border-radius:18px;margin-bottom:14px;background:#95a5a6}
-.swipe-action{position:absolute;right:0;top:0;bottom:0;width:100px;background:#95a5a6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;cursor:pointer}
+.swipe-action{position:absolute;right:0;top:0;bottom:0;width:100px;background:#95a5a6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;z-index:1;cursor:pointer}
+
+.card{position:relative;z-index:2;background:#fff;border-radius:18px;padding:16px;margin-bottom:0;box-shadow:0 2px 14px rgba(70,40,120,.07);transition:transform 0.25s ease}
 .card.swiped{transform:translateX(-100px)}
 
-.card{background:#fff;border-radius:18px;padding:16px;margin-bottom:0;box-shadow:0 2px 14px rgba(70,40,120,.07);transition:transform 0.25s ease}
 .row{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
 .grow{flex:1;min-width:0}
 h3{margin:0;font-size:19px;font-weight:800;line-height:1.3}
