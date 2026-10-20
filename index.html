@@ -50,6 +50,9 @@ a{color:var(--vi);word-break:break-all}
 
 .card{position:relative;z-index:2;background:#fff;border-radius:18px;padding:16px;margin-bottom:0;box-shadow:0 2px 14px rgba(70,40,120,.07);transition:transform 0.25s ease}
 .card.swiped{transform:translateX(-100px)}
+.card.hid{background:#f0edf6;color:#8e83a6}
+.card.hid .mut{color:#aba2be}
+.card.hid b{color:#8e83a6!important}
 
 .row{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
 .grow{flex:1;min-width:0}
@@ -92,7 +95,6 @@ label{display:block;font-size:12px;color:var(--mut);margin:12px 0 4px}
 .auth h2{font-size:24px;margin:0 0 4px}
 .who{display:flex;align-items:center;gap:8px;margin:6px 0}
 .who .av{margin:0;border:0}
-.hid{opacity:.5}
 #toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:99px;font-size:13px;z-index:30;display:none}
 </style>
 </head>
@@ -208,7 +210,7 @@ function detail(id){
  +'<div class="sec" style="background:var(--vi2)"><h4>チケット情報</h4><p>種別: '+esc(l.ticket_type||'—')+'</p><p>申込受付: '+fdt(l.apply_start)+' 〜 '+fdt(l.apply_end)+'</p><p>当落発表: '+fd(l.result_date)+'</p><p>発券開始: '+fd(l.issue_date)+'</p></div>'
  +(l.memo?'<div class="sec" style="background:var(--gr)"><h4>メモ</h4><p>'+link(l.memo)+'</p></div>':'')
  +(l.setlist?'<div class="sec" style="background:var(--gr)"><h4>セトリ</h4><p>'+link(l.setlist)+'</p></div>':'')
- +'<div class="sec" style="background:var(--gr)"><h4>行くかも！リスト（'+who.length+'人）</h4>'+(who.length?who.map(i=>'<div class="who">'+av(profs[i.user_id])+esc((profs[i.user_id]||{}).username)+'</div>').join(''):'<p class="mut">まだ誰もいません</p>')+'</div>'
+ +'<div class="sec" style="background:var(--gr)"><h4>行くかもリスト（'+who.length+'人）</h4>'+(who.length?who.map(i=>'<div class="who">'+av(profs[i.user_id])+esc((profs[i.user_id]||{}).username)+'</div>').join(''):'<p class="mut">まだ誰もいません</p>')+'</div>'
  +'<button class="btn p" onclick="toggleGo(event,\''+id+'\')">'+(on?'行くかも！を取り消す':'行くかも！')+'</button>'
  +(host?'<button class="btn" onclick="formM(\''+id+'\')">編集</button><button class="btn d" onclick="delLive(\''+id+'\')">削除</button>':'')
  +'<button class="btn" onclick="closeM()">閉じる</button>');
