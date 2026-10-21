@@ -208,8 +208,12 @@ function render(){
  +'<div class="me"><button class="chip" onclick="myPage()">'+av(prof)+esc(prof&&prof.username)+'</button>'+(host?'<button onclick="siteM()">設定</button>':'')+'</div>'
  +'</div>';
 
- h+='<div class="tabs"><button class="'+(tab==='s'?'on':'')+'" onclick="tab=\'s\';render()">スケジュール</button><button class="'+(tab==='n'?'on':'')+'" onclick="tab=\'n\';render()">整理番号</button></div><div class="wrap">';
- h+=tab==='s'?schedView():numView();
+ h+='<div class="tabs">'
+ +'<button class="'+(tab==='s'?'on':'')+'" onclick="tab=\'s\';render()">スケジュール</button>'
+ +'<button class="'+(tab==='i'?'on':'')+'" onclick="tab=\'i\';render()">行くかも！</button>'
+ +'<button class="'+(tab==='n'?'on':'')+'" onclick="tab=\'n\';render()">整理番号</button>'
+ +'</div><div class="wrap">';
+ h+=tab==='s'?schedView():(tab==='i'?interestView():numView());
  h+='</div>'+(host&&tab==='s'?'<button class="fab" aria-label="イベントを追加" onclick="formM()">+</button>':'');
  $('#app').innerHTML=h;
 }
@@ -234,6 +238,15 @@ function schedView(){
  let h=calView()+(selDate?'<div class="flt"><span>'+fd(selDate)+' の予定</span><button class="hint" onclick="selDate=null;render()">解除</button></div>':'')
  +'<div class="bar"><b>'+arr.length+'件</b><select onchange="sort=this.value;render()"><option value="d"'+(sort==='d'?' selected':'')+'>日付順</option><option value="a"'+(sort==='a'?' selected':'')+'>申込順（締切が近い順）</option></select></div>';
  if(!arr.length)return h+'<div class="empty">'+(selDate?'この日の予定はありません。':'まだ予定がありません。<br>ホストが追加すると、ここに表示されます。')+'</div>';
+ return h+arr.map(card).join('');
+}
+function interestView(){
+ const myIntLiveIds=new Set(ints.filter(i=>i.user_id===me.id).map(i=>i.live_id));
+ let arr=sorted0().filter(l=>myIntLiveIds.has(l.id));
+ if(selDate)arr=arr.filter(l=>l.live_date===selDate);
+ let h=calView()+(selDate?'<div class="flt"><span>'+fd(selDate)+' の予定</span><button class="hint" onclick="selDate=null;render()">解除</button></div>':'')
+ +'<div class="bar"><b>「行くかも！」リスト（'+arr.length+'件）</b></div>';
+ if(!arr.length)return h+'<div class="empty">'+(selDate?'この日の「行くかも！」予定はありません。':'まだ「行くかも！」に登録したイベントはありません。')+'</div>';
  return h+arr.map(card).join('');
 }
 function card(l){
@@ -493,7 +506,7 @@ function resizeImgForHeader(file){
   img.onload=()=>{
    const canvas=document.createElement('canvas');
    let w=img.width,h=img.height,max=1200;
-   if(w>h){if(w>max){h=Math.round(h*max/w);w=max}}else{if(h>max){w=Math.round(h*max/h);h=max}}
+   if(w>h){if(w>max){h=Math.round(h*max/w);w=max}}else{if(h>max){w=Math.round(w*max/h);h=max}}
    canvas.width=w;canvas.height=h;
    const ctx=canvas.getContext('2d');
    ctx.drawImage(img,0,0,w,h);
