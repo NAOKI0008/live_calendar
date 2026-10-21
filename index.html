@@ -179,13 +179,20 @@ async function load(){
 function getActiveSite(){
  return siteSettingsMap[currentGenre] || {title:'', header_url:''};
 }
+function compareDateTime(a, b){
+ const dComp = (a.live_date || '9999').localeCompare(b.live_date || '9999');
+ if(dComp !== 0) return dComp;
+ const tA = a.start_time || a.open_time || '99:99';
+ const tB = b.start_time || b.open_time || '99:99';
+ return tA.localeCompare(tB);
+}
 function sorted(){
  const l=lives.filter(x=>(x.genre||'live')===currentGenre),now=Date.now();
  l.sort((a,b)=>{
   const aPast = isPastDate(a.live_date);
   const bPast = isPastDate(b.live_date);
   if(aPast !== bPast) return aPast ? 1 : -1;
-  if(sort==='d')return (a.live_date||'9999').localeCompare(b.live_date||'9999');
+  if(sort==='d') return compareDateTime(a, b);
   else{const f=x=>{if(!x.apply_end)return 9e15;const t=new Date(x.apply_end).getTime();return t<now?1e15+t:t};return f(a)-f(b)}
  });
  return l;
@@ -195,7 +202,7 @@ function sorted0(){
   const aPast = isPastDate(a.live_date);
   const bPast = isPastDate(b.live_date);
   if(aPast !== bPast) return aPast ? 1 : -1;
-  return (a.live_date||'9999').localeCompare(b.live_date||'9999');
+  return compareDateTime(a, b);
  });
 }
 function render(){
@@ -235,8 +242,10 @@ function calMove(n){calM+=n;if(calM<0){calM=11;calY--}if(calM>11){calM=0;calY++}
 function pickDate(ds){selDate=selDate===ds?null:ds;render()}
 function schedView(){
  let arr=sorted();if(selDate)arr=arr.filter(l=>l.live_date===selDate);
+ const futureCount=arr.filter(l=>!isPastDate(l.live_date)).length;
+ const totalCount=arr.length;
  let h=calView()+(selDate?'<div class="flt"><span>'+fd(selDate)+' の予定</span><button class="hint" onclick="selDate=null;render()">解除</button></div>':'')
- +'<div class="bar"><b>'+arr.length+'件</b><select onchange="sort=this.value;render()"><option value="d"'+(sort==='d'?' selected':'')+'>日付順</option><option value="a"'+(sort==='a'?' selected':'')+'>申込順（締切が近い順）</option></select></div>';
+ +'<div class="bar"><b>未来 '+futureCount+'件 / 全 '+totalCount+'件</b><select onchange="sort=this.value;render()"><option value="d"'+(sort==='d'?' selected':'')+'>日付順</option><option value="a"'+(sort==='a'?' selected':'')+'>申込順（締切が近い順）</option></select></div>';
  if(!arr.length)return h+'<div class="empty">'+(selDate?'この日の予定はありません。':'まだ予定がありません。<br>ホストが追加すると、ここに表示されます。')+'</div>';
  return h+arr.map(card).join('');
 }
@@ -244,8 +253,10 @@ function interestView(){
  const myIntLiveIds=new Set(ints.filter(i=>i.user_id===me.id).map(i=>i.live_id));
  let arr=sorted0().filter(l=>myIntLiveIds.has(l.id));
  if(selDate)arr=arr.filter(l=>l.live_date===selDate);
+ const futureCount=arr.filter(l=>!isPastDate(l.live_date)).length;
+ const totalCount=arr.length;
  let h=calView()+(selDate?'<div class="flt"><span>'+fd(selDate)+' の予定</span><button class="hint" onclick="selDate=null;render()">解除</button></div>':'')
- +'<div class="bar"><b>「行くかも！」リスト（'+arr.length+'件）</b></div>';
+ +'<div class="bar"><b>「行くかも！」未来 '+futureCount+'件 / 全 '+totalCount+'件</b></div>';
  if(!arr.length)return h+'<div class="empty">'+(selDate?'この日の「行くかも！」予定はありません。':'まだ「行くかも！」に登録したイベントはありません。')+'</div>';
  return h+arr.map(card).join('');
 }
