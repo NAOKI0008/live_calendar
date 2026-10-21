@@ -19,28 +19,37 @@ a{color:var(--vi);word-break:break-all}
 
 /* ヘッダー周り（左右配置） */
 .hero{height:140px;background:linear-gradient(135deg,#2a1559 0%,#6d3fd1 55%,#d6458f 120%);color:#fff;display:flex;align-items:flex-end;justify-content:space-between;padding:16px;background-size:cover;background-position:center}
-.genre-bar{display:flex;gap:8px}
-.genre-bar button{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.3);padding:6px 14px;border-radius:99px;font-size:13px;font-weight:700;color:#fff}
+.genre-bar{display:flex;gap:6px}
+.genre-bar button{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.3);padding:6px 12px;border-radius:99px;font-size:13px;font-weight:700;color:#fff}
 .genre-bar button.active{background:#fff;color:var(--vi);border-color:#fff}
+
+.hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.year-select{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);color:#fff;font-weight:700;font-size:12px;padding:4px 8px;border-radius:8px;width:auto;cursor:pointer}
+.year-select option{color:var(--ink);background:#fff}
 
 .me{display:flex;align-items:center;gap:6px;font-size:12px}
 .me button{background:rgba(255,255,255,.2);padding:6px 12px;border-radius:99px;font-size:12px;color:#fff;font-weight:700}
 .chip{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.2)!important;padding:4px 10px!important}
 .chip .av{margin:0;width:22px;height:22px;font-size:11px}
 
+/* カレンダーグリッド */
 .cal{position:sticky;top:calc(env(safe-area-inset-top,0px) + 49px);z-index:4;background:var(--bg);margin:-14px -14px 10px;padding:6px 14px 8px;border-bottom:1px solid var(--line)}
 .calh{display:flex;justify-content:space-between;align-items:center}
 .calh b{font-size:16px}
 .calh button{width:44px;height:32px;font-size:24px;color:var(--vi)}
-.cg{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
+.cg{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;gap:2px}
 .wd{font-size:11px;color:var(--mut);padding:2px 0}
-.dc{position:relative;height:34px;font-size:14px;font-weight:700;border-radius:10px;color:var(--ink)}
+.dc{position:relative;min-height:48px;font-size:13px;font-weight:700;border-radius:8px;color:var(--ink);display:flex;flex-direction:column;align-items:center;padding-top:3px;overflow:hidden;background:#fff;border:1px solid transparent}
 .su{color:#d33}.sa{color:#2a6ad8}
-.dc i{position:absolute;left:50%;bottom:3px;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:var(--pk)}
-.dc i.g{background:var(--vi)}
-.dc.today{background:var(--pk);color:#fff}
-.dc.today i{background:#fff}
-.dc.sel{outline:2px solid var(--vi)}
+.dc.today{background:var(--pk2);color:var(--pk);font-weight:900}
+.dc.sel{outline:2px solid var(--vi);z-index:1}
+
+/* カレンダー内のラベルバッジ */
+.cal-badges{display:flex;flex-direction:column;gap:2px;width:100%;padding:2px 1px 1px;margin-top:auto}
+.cbadge{display:block;width:100%;font-size:9px;font-weight:700;color:#fff;padding:1px 2px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;text-align:center}
+.cbadge.music{background:#4a90e2}
+.cbadge.comedy{background:#f5a623}
+
 .flt{display:flex;justify-content:space-between;align-items:center;background:var(--vi2);border-radius:12px;padding:8px 12px;margin-bottom:10px;font-size:13px}
 .tabs{position:sticky;top:env(safe-area-inset-top,0);z-index:5;display:flex;background:#fff;border-bottom:1px solid var(--line)}
 .tabs button{flex:1;height:48px;padding:0;font-weight:700;color:var(--mut);border-bottom:3px solid transparent}
@@ -114,7 +123,7 @@ label{display:block;font-size:12px;color:var(--mut);margin:12px 0 4px}
 <div id="toast"></div>
 <script>
 const sb = supabase.createClient('https://njzdxjkclaonvtjirrgp.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qemR4amtjbGFvbnZ0amlycmdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0MzY2NjQsImV4cCI6MjEwODAxMjY2NH0.KkV71ATa8YGN33XJgLtmzJTlsHQkmhoqEAg3bO-wX9U');
-let calY=new Date().getFullYear(),calM=new Date().getMonth(),selDate=null,siteSettingsMap={},me=null,prof=null,lives=[],ints=[],profs={},nums={},tab='s',sort='d',showHid=false,authMode='in',tx=0,activeSwipeId=null,currentGenre='live';
+let calY=new Date().getFullYear(),calM=new Date().getMonth(),selDate=null,siteSettingsMap={},me=null,prof=null,lives=[],ints=[],profs={},nums={},tab='s',sort='d',showHid=false,authMode='in',tx=0,activeSwipeId=null,currentGenre='live',selYear='ALL';
 let currentTouchTarget=null;
 
 const $=s=>document.querySelector(s);
@@ -186,8 +195,18 @@ function compareDateTime(a, b){
  const tB = b.start_time || b.open_time || '99:99';
  return tA.localeCompare(tB);
 }
+function filterByGenreAndYear(l){
+ return l.filter(x=>{
+  const gMatch = (currentGenre==='koyake') ? true : ((x.genre||'live')===currentGenre);
+  if(!gMatch) return false;
+  if(selYear !== 'ALL'){
+   if(!x.live_date || !x.live_date.startsWith(selYear)) return false;
+  }
+  return true;
+ });
+}
 function sorted(){
- const l=lives.filter(x=>(x.genre||'live')===currentGenre),now=Date.now();
+ const l=filterByGenreAndYear(lives),now=Date.now();
  l.sort((a,b)=>{
   const aPast = isPastDate(a.live_date);
   const bPast = isPastDate(b.live_date);
@@ -198,7 +217,7 @@ function sorted(){
  return l;
 }
 function sorted0(){
- return lives.filter(x=>(x.genre||'live')===currentGenre).sort((a,b)=>{
+ return filterByGenreAndYear(lives).sort((a,b)=>{
   const aPast = isPastDate(a.live_date);
   const bPast = isPastDate(b.live_date);
   if(aPast !== bPast) return aPast ? 1 : -1;
@@ -210,9 +229,21 @@ function render(){
  const site=getActiveSite();
  const hb=safe(site.header_url)?' style="background-image:linear-gradient(rgba(20,10,40,.1),rgba(20,10,40,.55)),url(\''+safe(site.header_url)+'\')"':'';
  
+ const years = Array.from(new Set(lives.map(x=>x.live_date ? x.live_date.slice(0,4) : null).filter(Boolean))).sort().reverse();
+ if(!years.includes(String(calY)) && calY) years.unshift(String(calY));
+ const yearOptions = '<option value="ALL"'+(selYear==='ALL'?' selected':'')+'>全年度</option>'
+ + years.map(y=>'<option value="'+y+'"'+(selYear===y?' selected':'')+'>'+y+'年</option>').join('');
+
  let h='<div class="hero"'+hb+'>'
- +'<div class="genre-bar"><button class="'+(currentGenre==='live'?'active':'')+'" onclick="currentGenre=\'live\';selDate=null;render()">ライブ</button><button class="'+(currentGenre==='comedy'?'active':'')+'" onclick="currentGenre=\'comedy\';selDate=null;render()">お笑い</button></div>'
- +'<div class="me"><button class="chip" onclick="myPage()">'+av(prof)+esc(prof&&prof.username)+'</button>'+(host?'<button onclick="siteM()">設定</button>':'')+'</div>'
+ +'<div class="genre-bar">'
+ +'<button class="'+(currentGenre==='live'?'active':'')+'" onclick="currentGenre=\'live\';selDate=null;render()">音楽</button>'
+ +'<button class="'+(currentGenre==='comedy'?'active':'')+'" onclick="currentGenre=\'comedy\';selDate=null;render()">お笑い</button>'
+ +'<button class="'+(currentGenre==='koyake'?'active':'')+'" onclick="currentGenre=\'koyake\';selDate=null;render()">こやけ</button>'
+ +'</div>'
+ +'<div class="hero-right">'
+ +'<select class="year-select" onchange="selYear=this.value;render()">'+yearOptions+'</select>'
+ +'<div class="me"><button class="chip" onclick="myPage()">'+av(prof)+esc(prof&&prof.username)+'</button>'+(host&&currentGenre!=='koyake'?'<button onclick="siteM()">設定</button>':'')+'</div>'
+ +'</div>'
  +'</div>';
 
  h+='<div class="tabs">'
@@ -227,14 +258,32 @@ function render(){
 function calView(){
  const y=calY,m=calM,first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
  const t=new Date(),ts=t.getFullYear()+'-'+p2(t.getMonth()+1)+'-'+p2(t.getDate());
- const my=new Set(ints.filter(i=>i.user_id===me.id).map(i=>i.live_id));
- const filteredLives=lives.filter(x=>(x.genre||'live')===currentGenre);
+ const filteredLives=filterByGenreAndYear(lives);
+
  let c='<div class="cal"><div class="calh"><button aria-label="前の月" onclick="calMove(-1)">‹</button><b>'+y+'年'+(m+1)+'月</b><button aria-label="次の月" onclick="calMove(1)">›</button></div><div class="cg">';
  '日月火水木金土'.split('').forEach((w,i)=>{c+='<span class="wd '+(i===0?'su':i===6?'sa':'')+'">'+w+'</span>'});
  for(let i=0;i<first;i++)c+='<span></span>';
  for(let d=1;d<=days;d++){
-  const ds=y+'-'+p2(m+1)+'-'+p2(d),dow=(first+d-1)%7,ls=filteredLives.filter(l=>l.live_date===ds),go=ls.some(l=>my.has(l.id));
-  c+='<button class="dc '+(dow===0?'su':dow===6?'sa':'')+(ds===ts?' today':'')+(ds===selDate?' sel':'')+'" onclick="pickDate(\''+ds+'\')">'+d+(ls.length?'<i class="'+(go?'g':'')+'"></i>':'')+'</button>';
+  const ds=y+'-'+p2(m+1)+'-'+p2(d),dow=(first+d-1)%7,ls=filteredLives.filter(l=>l.live_date===ds);
+  
+  let badgesHtml = '';
+  if(ls.length > 0){
+   badgesHtml = '<div class="cal-badges">';
+   ls.slice(0, 3).forEach(l=>{
+    const gClass = (l.genre === 'comedy') ? 'comedy' : 'music';
+    const label = esc(l.format || (l.genre === 'comedy' ? 'お笑い' : '音楽'));
+    badgesHtml += '<span class="cbadge '+gClass+'">'+label+'</span>';
+   });
+   if(ls.length > 3){
+    badgesHtml += '<span class="cbadge" style="background:#8e83a6">+'+(ls.length-3)+'</span>';
+   }
+   badgesHtml += '</div>';
+  }
+
+  c+='<button class="dc '+(dow===0?'su':dow===6?'sa':'')+(ds===ts?' today':'')+(ds===selDate?' sel':'')+'" onclick="pickDate(\''+ds+'\')">'
+   +'<span>'+d+'</span>'
+   +badgesHtml
+   +'</button>';
  }
  return c+'</div></div>';
 }
@@ -284,7 +333,7 @@ function detail(id){
 
  openM((safe(l.image_url)?'<img class="big" src="'+safe(l.image_url)+'" alt="">':'')+'<h3 style="font-size:22px">'+esc(l.title)+'</h3>'
  +(l.venue?'<p class="mut">📍 '+(safe(l.map_url)?'<a href="'+safe(l.map_url)+'" target="_blank" rel="noopener">'+esc(l.venue)+'</a>':esc(l.venue))+'</p>':'')
- +'<div class="sec" style="background:var(--pk2)"><h4>イベント情報</h4><p>開催日: <b>'+fd(l.live_date)+'</b></p><p>OPEN '+esc(l.open_time||'—')+' / START '+esc(l.start_time||'—')+'</p><p>形式: '+esc(l.format||'—')+'</p></div>'
+ +'<div class="sec" style="background:var(--pk2)"><h4>イベント情報</h4><p>開催日: <b>'+fd(l.live_date)+'</b></p><p>OPEN '+esc(l.open_time||'—')+' / START '+esc(l.start_time||'—')+'</p><p>ジャンル: '+(l.genre==='comedy'?'お笑い':'音楽')+' / 形式: '+esc(l.format||'—')+'</p></div>'
  +'<div class="sec" style="background:var(--vi2)"><h4>チケット情報</h4><p>種別: '+esc(l.ticket_type||'—')+'</p><p>申込受付: '+fdt(l.apply_start)+' 〜 '+fdt(l.apply_end)+'</p><p>当落発表: '+fd(l.result_date)+'</p><p>発券開始: '+fd(l.issue_date)+'</p></div>'
  +(l.memo?'<div class="sec" style="background:var(--gr)"><h4>メモ</h4><p>'+link(l.memo)+'</p></div>':'')
  +(l.setlist?'<div class="sec" style="background:var(--gr)"><h4>'+(l.genre==='comedy'?'内容メモ':'セトリ')+'</h4><p>'+link(l.setlist)+'</p></div>':'')
@@ -294,16 +343,17 @@ function detail(id){
 }
 function formM(id){
  const l=lives.find(x=>x.id===id)||{};const v=k=>esc(l[k]||'');
- const g = id ? (l.genre || 'live') : currentGenre;
+ const g = id ? (l.genre || 'live') : (currentGenre === 'koyake' ? 'live' : currentGenre);
  const isLive = (g === 'live');
 
  const f=(k,t,lab,ph)=>'<label>'+lab+'</label><input id="f_'+k+'" type="'+t+'" value="'+(t==='datetime-local'?esc(loc(l[k])):v(k))+'"'+(ph?' placeholder="'+ph+'"':'')+'>';
  
- let titleText = id ? 'イベントを編集' : (isLive ? 'ライブを追加' : 'お笑いライブを追加');
+ let titleText = id ? 'イベントを編集' : (isLive ? '音楽ライブを追加' : 'お笑いライブを追加');
  let formats = isLive ? ['主催','対バン','フェス'] : ['単独','寄席','その他興行'];
  let ticketPh = isLive ? 'ローチケ など' : 'FANYなど';
 
  let h = '<h3>'+titleText+'</h3>'
+    +  '<label>ジャンル</label><select id="f_genre" onchange="toggleGenreForm(this.value)"><option value="live"'+(g==='live'?' selected':'')+'>音楽</option><option value="comedy"'+(g==='comedy'?' selected':'')+'>お笑い</option></select>'
     +  f('title','text','公演名（必須）')
     +  f('venue','text','会場名')
     +  f('map_url','url','マップURL','https://')
@@ -317,13 +367,24 @@ function formM(id){
     +  f('result_date','date','当落発表日')
     +  f('issue_date','date','発券開始日')
     +  '<label>メモ（URLは自動でリンクになります）</label><textarea id="f_memo">'+v('memo')+'</textarea>'
-    +  '<label>'+(isLive ? 'セトリ' : '内容メモ')+'</label><textarea id="f_setlist">'+v('setlist')+'</textarea>'
-    +  '<button class="btn p" onclick="saveLive(\''+(id||'')+'\',\''+g+'\')">保存する</button><button class="btn" onclick="closeM()">キャンセル</button>';
+    +  '<label id="lbl_setlist">'+(isLive ? 'セトリ' : '内容メモ')+'</label><textarea id="f_setlist">'+v('setlist')+'</textarea>'
+    +  '<button class="btn p" onclick="saveLive(\''+(id||'')+'\')">保存する</button><button class="btn" onclick="closeM()">キャンセル</button>';
 
  openM(h);
 }
 
-async function saveLive(id, genre){
+function toggleGenreForm(v){
+ const isLive = (v === 'live');
+ const formats = isLive ? ['主催','対バン','フェス'] : ['単独','寄席','その他興行'];
+ const select = $('#f_format');
+ if(select){
+  select.innerHTML = '<option value="">選択なし</option>' + formats.map(o=>'<option>'+o+'</option>').join('');
+ }
+ const lbl = $('#lbl_setlist');
+ if(lbl) lbl.textContent = isLive ? 'セトリ' : '内容メモ';
+}
+
+async function saveLive(id){
  const getv=k=>{
   const el=$('#f_'+k);
   if(!el) return null;
@@ -331,7 +392,8 @@ async function saveLive(id, genre){
   return val === '' ? null : val;
  };
  
- const o={genre: genre};
+ const g = getv('genre') || 'live';
+ const o={genre: g};
 
  o.title=getv('title');
  if(!o.title)return toast('公演名は必須です');
@@ -481,7 +543,7 @@ async function savePw(){
 }
 function siteM(){
  const site=getActiveSite();
- openM('<h3>サイト設定 ('+(currentGenre==='live'?'ライブ':'お笑い')+')</h3>'
+ openM('<h3>サイト設定 ('+(currentGenre==='live'?'音楽':'お笑い')+')</h3>'
  +'<label>ヘッダー画像（タップして写真を選択）</label><input id="sfile" type="file" accept="image/*">'
  +'<button class="btn p" onclick="saveSite()">保存する</button><button class="btn" onclick="closeM()">キャンセル</button>');
 }
