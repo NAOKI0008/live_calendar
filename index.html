@@ -60,6 +60,9 @@ a{color:var(--vi);word-break:break-all}
 .card.hid{background:#f0edf6;color:#8e83a6}
 .card.hid .mut{color:#aba2be}
 .card.hid b{color:#8e83a6!important}
+.card.past{background:#f3f1f6;opacity:0.8;color:#7e7293}
+.card.past .mut{color:#9e92b3}
+.card.past b{color:#7e7293!important}
 
 .row{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
 .grow{flex:1;min-width:0}
@@ -112,11 +115,16 @@ label{display:block;font-size:12px;color:var(--mut);margin:12px 0 4px}
 <script>
 const sb = supabase.createClient('https://njzdxjkclaonvtjirrgp.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qemR4amtjbGFvbnZ0amlycmdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0MzY2NjQsImV4cCI6MjEwODAxMjY2NH0.KkV71ATa8YGN33XJgLtmzJTlsHQkmhoqEAg3bO-wX9U');
 let calY=new Date().getFullYear(),calM=new Date().getMonth(),selDate=null,siteSettingsMap={},me=null,prof=null,lives=[],ints=[],profs={},nums={},tab='s',sort='d',showHid=false,authMode='in',tx=0,activeSwipeId=null,currentGenre='live';
+let currentTouchTarget=null;
+
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safe=u=>/^https?:\/\//.test(u||'')?esc(u):'';
 const link=s=>esc(s).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g,'<br>');
 const p2=n=>String(n).padStart(2,'0');
+const getTodayStr=()=>{const t=new Date();return t.getFullYear()+'-'+p2(t.getMonth()+1)+'-'+p2(t.getDate())};
+const isPastDate=d=>d && d < getTodayStr();
+
 const fd=d=>{if(!d)return'未定';const x=new Date(d+'T00:00:00');return x.getFullYear()+'年'+(x.getMonth()+1)+'月'+x.getDate()+'日('+'日月火水木金土'[x.getDay()]+')'};
 const fdt=t=>{if(!t)return'—';const x=new Date(t);return (x.getMonth()+1)+'/'+x.getDate()+' '+p2(x.getHours())+':'+p2(x.getMinutes())};
 const loc=t=>{if(!t)return'';const x=new Date(t);return x.getFullYear()+'-'+p2(x.getMonth()+1)+'-'+p2(x.getDate())+'T'+p2(x.getHours())+':'+p2(x.getMinutes())};
@@ -173,18 +181,22 @@ function getActiveSite(){
 }
 function sorted(){
  const l=lives.filter(x=>(x.genre||'live')===currentGenre),now=Date.now();
- if(sort==='d'){
-  l.sort((a,b)=>{
-   const d1 = a.live_date || '9999-99-99';
-   const d2 = b.live_date || '9999-99-99';
-   if(d1 !== d2) return d1.localeCompare(d2);
-   const t1 = a.start_time || a.open_time || '99:99';
-   const t2 = b.start_time || b.open_time || '99:99';
-   return t1.localeCompare(t2);
-  });
- }
- else{const f=x=>{if(!x.apply_end)return 9e15;const t=new Date(x.apply_end).getTime();return t<now?1e15+t:t};l.sort((a,b)=>f(a)-f(b))}
+ l.sort((a,b)=>{
+  const aPast = isPastDate(a.live_date);
+  const bPast = isPastDate(b.live_date);
+  if(aPast !== bPast) return aPast ? 1 : -1;
+  if(sort==='d')return (a.live_date||'9999').localeCompare(b.live_date||'9999');
+  else{const f=x=>{if(!x.apply_end)return 9e15;const t=new Date(x.apply_end).getTime();return t<now?1e15+t:t};return f(a)-f(b)}
+ });
  return l;
+}
+function sorted0(){
+ return lives.filter(x=>(x.genre||'live')===currentGenre).sort((a,b)=>{
+  const aPast = isPastDate(a.live_date);
+  const bPast = isPastDate(b.live_date);
+  if(aPast !== bPast) return aPast ? 1 : -1;
+  return (a.live_date||'9999').localeCompare(b.live_date||'9999');
+ });
 }
 function render(){
  const host=prof&&prof.is_host;
@@ -226,8 +238,9 @@ function schedView(){
 }
 function card(l){
  const who=ints.filter(i=>i.live_id===l.id),on=who.some(i=>i.user_id===me.id);
+ const past=isPastDate(l.live_date);
  
- return '<div class="card" onclick="detail(\''+l.id+'\')"><div class="row"><div class="grow"><h3>'+esc(l.title)+'</h3><p class="mut">📍 '+esc(l.venue||'会場未定')+'</p></div>'+(safe(l.image_url)?'<img class="th" src="'+safe(l.image_url)+'" alt="">':'')+'</div>'
+ return '<div class="card'+(past?' past':'')+'" onclick="detail(\''+l.id+'\')"><div class="row"><div class="grow"><h3>'+esc(l.title)+'</h3><p class="mut">📍 '+esc(l.venue||'会場未定')+'</p></div>'+(safe(l.image_url)?'<img class="th" src="'+safe(l.image_url)+'" alt="">':'')+'</div>'
  +'<div class="grid">'
  +'<div class="b pk"><small>開催日</small><b>'+fd(l.live_date)+'</b></div><div class="b vi"><small>チケット種別</small><b>'+esc(l.ticket_type||'—')+'</b></div><div class="b wide"><small>申込受付期間</small><b>'+fdt(l.apply_start)+' 〜 '+fdt(l.apply_end)+'</b></div><div class="b"><small>当落発表</small><b>'+fd(l.result_date)+'</b></div><div class="b"><small>発券開始</small><b>'+fd(l.issue_date)+'</b></div>'
  +'</div>'
@@ -330,30 +343,38 @@ function numView(){
  return h+l.map(x=>{
   const n=nums[x.id]||{};const hd=n.hidden;
   const isSwiped=activeSwipeId===x.id;
+  const past=isPastDate(x.live_date);
   return '<div class="swipe-wrap'+(hd?' is-hid':'')+'">'
    +'<div class="swipe-action" ontouchend="setHid(\''+x.id+'\','+!hd+');event.stopPropagation()" onclick="setHid(\''+x.id+'\','+!hd+')">'+(hd?'表示':'非表示')+'</div>'
-   +'<div class="card num'+(hd?' hid':'')+(isSwiped?' swiped':'')+'" ontouchstart="tx=event.touches[0].clientX" ontouchend="swipe(event,\''+x.id+'\')" onclick="if(activeSwipeId===\''+x.id+'\'){activeSwipeId=null;render()}else{numM(\''+x.id+'\')}">'
+   +'<div class="card num'+(hd?' hid':'')+(past?' past':'')+(isSwiped?' swiped':'')+'" ontouchstart="touchStart(event,\''+x.id+'\')" ontouchmove="touchMove(event,\''+x.id+'\')" ontouchend="swipe(event,\''+x.id+'\')" onclick="if(activeSwipeId===\''+x.id+'\'){activeSwipeId=null;render()}else{numM(\''+x.id+'\')}">'
    +'<div class="grow"><b style="color:var(--pk)">'+fd(x.live_date)+'</b><h3 style="font-size:17px">'+esc(x.title)+'</h3><p class="mut">📍 '+esc(x.venue||'会場未定')+'</p></div>'
    +'<div class="nb"><small>整理番号 / 座席</small><b>'+esc(n.number||'—')+'</b></div>'
    +'</div></div>';
  }).join('');
 }
-function sorted0(){
- return lives.filter(x=>(x.genre||'live')===currentGenre).sort((a,b)=>{
-  const d1 = a.live_date || '9999-99-99';
-  const d2 = b.live_date || '9999-99-99';
-  if(d1 !== d2) return d1.localeCompare(d2);
-  const t1 = a.start_time || a.open_time || '99:99';
-  const t2 = b.start_time || b.open_time || '99:99';
-  return t1.localeCompare(t2);
- });
+function touchStart(e,id){
+ tx=e.touches[0].clientX;
+ currentTouchTarget=e.currentTarget;
+ currentTouchTarget.style.transition='none';
+}
+function touchMove(e,id){
+ if(!currentTouchTarget)return;
+ const currentX=e.touches[0].clientX;
+ const diff=currentX-tx;
+ let moveX=Math.min(0,Math.max(-100,(activeSwipeId===id?-100:0)+diff));
+ currentTouchTarget.style.transform=`translateX(${moveX}px)`;
 }
 function swipe(e,id){
- if(e.changedTouches[0].clientX-tx<-40){
-  activeSwipeId=id;render();
- }else if(e.changedTouches[0].clientX-tx>40&&activeSwipeId===id){
-  activeSwipeId=null;render();
+ if(!currentTouchTarget)return;
+ currentTouchTarget.style.transition='transform 0.25s ease';
+ const diff=e.changedTouches[0].clientX-tx;
+ if(activeSwipeId===id){
+  if(diff>40)activeSwipeId=null;
+ }else{
+  if(diff<-40)activeSwipeId=id;
  }
+ currentTouchTarget=null;
+ render();
 }
 async function setHid(id,v){
  activeSwipeId=null;
@@ -472,7 +493,7 @@ function resizeImgForHeader(file){
   img.onload=()=>{
    const canvas=document.createElement('canvas');
    let w=img.width,h=img.height,max=1200;
-   if(w>h){if(w>max){h=Math.round(h*max/w);w=max}}else{if(h>max){w=Math.round(w*max/h);h=max}}
+   if(w>h){if(w>max){h=Math.round(h*max/w);w=max}}else{if(h>max){w=Math.round(h*max/h);h=max}}
    canvas.width=w;canvas.height=h;
    const ctx=canvas.getContext('2d');
    ctx.drawImage(img,0,0,w,h);
