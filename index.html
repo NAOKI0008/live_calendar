@@ -173,7 +173,16 @@ function getActiveSite(){
 }
 function sorted(){
  const l=lives.filter(x=>(x.genre||'live')===currentGenre),now=Date.now();
- if(sort==='d')l.sort((a,b)=>(a.live_date||'9999').localeCompare(b.live_date||'9999'));
+ if(sort==='d'){
+  l.sort((a,b)=>{
+   const d1 = a.live_date || '9999-99-99';
+   const d2 = b.live_date || '9999-99-99';
+   if(d1 !== d2) return d1.localeCompare(d2);
+   const t1 = a.start_time || a.open_time || '99:99';
+   const t2 = b.start_time || b.open_time || '99:99';
+   return t1.localeCompare(t2);
+  });
+ }
  else{const f=x=>{if(!x.apply_end)return 9e15;const t=new Date(x.apply_end).getTime();return t<now?1e15+t:t};l.sort((a,b)=>f(a)-f(b))}
  return l;
 }
@@ -330,7 +339,14 @@ function numView(){
  }).join('');
 }
 function sorted0(){
- return lives.filter(x=>(x.genre||'live')===currentGenre).sort((a,b)=>(a.live_date||'9999').localeCompare(b.live_date||'9999'));
+ return lives.filter(x=>(x.genre||'live')===currentGenre).sort((a,b)=>{
+  const d1 = a.live_date || '9999-99-99';
+  const d2 = b.live_date || '9999-99-99';
+  if(d1 !== d2) return d1.localeCompare(d2);
+  const t1 = a.start_time || a.open_time || '99:99';
+  const t2 = b.start_time || b.open_time || '99:99';
+  return t1.localeCompare(t2);
+ });
 }
 function swipe(e,id){
  if(e.changedTouches[0].clientX-tx<-40){
@@ -431,12 +447,10 @@ async function saveSite(){
  if(fileInput.files&&fileInput.files[0]){
   toast('画像を圧縮してアップロード中...');
   try{
-   // ヘッダー画像用に少し大きめのサイズ（max=1200pxなど）か、マイページと同じ共通関数でリサイズ
    const blob=await resizeImgForHeader(fileInput.files[0]);
    const path='header_'+currentGenre+'.jpg';
    const up=await sb.storage.from('avatars').upload(path,blob,{contentType:'image/jpeg',upsert:true});
    if(up.error)return toast('画像失敗: '+up.error.message);
-   const pub=sb.storage.from('avatars'.replace('avatars','avatars')); // バケット名は既存のavatarsを利用
    const pubUrlObj=sb.storage.from('avatars').getPublicUrl(path);
    header_url=pubUrlObj.data.publicUrl+'?v='+Date.now();
   }catch(err){return toast('画像処理に失敗しました')}
@@ -450,7 +464,6 @@ async function saveSite(){
  closeM();toast('保存しました');load();
 }
 
-// ヘッダー用リサイズ（少し大きめの1200pxに調整）
 function resizeImgForHeader(file){
  return new Promise((res,rej)=>{
   const img=new Image(),reader=new FileReader();
