@@ -254,7 +254,7 @@ function formM(id){
  const f=(k,t,lab,ph)=>'<label>'+lab+'</label><input id="f_'+k+'" type="'+t+'" value="'+(t==='datetime-local'?esc(loc(l[k])):v(k))+'"'+(ph?' placeholder="'+ph+'"':'')+'>';
  
  let titleText = id ? 'イベントを編集' : (isLive ? 'ライブを追加' : 'お笑いライブを追加');
- let formats = isLive ? ['主催','対バン','フェス'] : ['単独ライブ','ライブ・寄席','主催','対バン'];
+ let formats = isLive ? ['主催','対バン','フェス'] : ['単独','寄席','その他興行'];
  let ticketPh = isLive ? 'ローチケ など' : 'FANYなど';
 
  let h = '<h3>'+titleText+'</h3>'
