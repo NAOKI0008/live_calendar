@@ -242,7 +242,7 @@ function render(){
  +'</div>'
  +'<div class="hero-right">'
  +'<select class="year-select" onchange="selYear=this.value;render()">'+yearOptions+'</select>'
- +'<div class="me"><button class="chip" onclick="myPage()">'+av(prof)+esc(prof&&prof.username)+'</button>'+(host&&currentGenre!=='koyake'?'<button onclick="siteM()">設定</button>':'')+'</div>'
+ +'<div class="me"><button class="chip" onclick="myPage()">'+av(prof)+esc(prof&&prof.username)+'</button>'+(host?'<button onclick="siteM()">設定</button>':'')+'</div>'
  +'</div>'
  +'</div>';
 
@@ -542,8 +542,8 @@ async function savePw(){
  $('#np').value='';toast('パスワードを変更しました');
 }
 function siteM(){
- const site=getActiveSite();
- openM('<h3>サイト設定 ('+(currentGenre==='live'?'音楽':'お笑い')+')</h3>'
+ const genreNames = { live: '音楽', comedy: 'お笑い', koyake: 'こやけ' };
+ openM('<h3>サイト設定 (' + (genreNames[currentGenre] || '全般') + ')</h3>'
  +'<label>ヘッダー画像（タップして写真を選択）</label><input id="sfile" type="file" accept="image/*">'
  +'<button class="btn p" onclick="saveSite()">保存する</button><button class="btn" onclick="closeM()">キャンセル</button>');
 }
