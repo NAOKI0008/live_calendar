@@ -17,7 +17,7 @@ textarea{min-height:84px;resize:vertical}
 a{color:var(--vi);word-break:break-all}
 :focus-visible{outline:3px solid var(--vi);outline-offset:2px}
 
-/* ヘッダー周り（タイトル撤廃＆左右配置） */
+/* ヘッダー周り（左右配置） */
 .hero{height:140px;background:linear-gradient(135deg,#2a1559 0%,#6d3fd1 55%,#d6458f 120%);color:#fff;display:flex;align-items:flex-end;justify-content:space-between;padding:16px;background-size:cover;background-position:center}
 .genre-bar{display:flex;gap:8px}
 .genre-bar button{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.3);padding:6px 14px;border-radius:99px;font-size:13px;font-weight:700;color:#fff}
@@ -420,18 +420,55 @@ async function savePw(){
 }
 function siteM(){
  const site=getActiveSite();
- openM('<h3>サイト設定 ('+(currentGenre==='live'?'ライブ':'お笑い')+')</h3><label>ヘッダー画像のURL</label><input id="sh" value="'+esc(site.header_url||'')+'" placeholder="https://...">'
+ openM('<h3>サイト設定 ('+(currentGenre==='live'?'ライブ':'お笑い')+')</h3>'
+ +'<label>ヘッダー画像（タップして写真を選択）</label><input id="sfile" type="file" accept="image/*">'
  +'<button class="btn p" onclick="saveSite()">保存する</button><button class="btn" onclick="closeM()">キャンセル</button>');
 }
 async function saveSite(){
+ const site=getActiveSite();
+ let header_url=site.header_url||null;
+ const fileInput=$('#sfile');
+ if(fileInput.files&&fileInput.files[0]){
+  toast('画像を圧縮してアップロード中...');
+  try{
+   // ヘッダー画像用に少し大きめのサイズ（max=1200pxなど）か、マイページと同じ共通関数でリサイズ
+   const blob=await resizeImgForHeader(fileInput.files[0]);
+   const path='header_'+currentGenre+'.jpg';
+   const up=await sb.storage.from('avatars').upload(path,blob,{contentType:'image/jpeg',upsert:true});
+   if(up.error)return toast('画像失敗: '+up.error.message);
+   const pub=sb.storage.from('avatars'.replace('avatars','avatars')); // バケット名は既存のavatarsを利用
+   const pubUrlObj=sb.storage.from('avatars').getPublicUrl(path);
+   header_url=pubUrlObj.data.publicUrl+'?v='+Date.now();
+  }catch(err){return toast('画像処理に失敗しました')}
+ }
  const r=await sb.from('site_settings').upsert({
   genre: currentGenre,
   title: '',
-  header_url: $('#sh').value.trim()||null
+  header_url: header_url
  }, {onConflict: 'genre'});
  if(r.error)return toast('失敗: '+r.error.message);
  closeM();toast('保存しました');load();
 }
+
+// ヘッダー用リサイズ（少し大きめの1200pxに調整）
+function resizeImgForHeader(file){
+ return new Promise((res,rej)=>{
+  const img=new Image(),reader=new FileReader();
+  reader.onload=e=>img.src=e.target.result;
+  reader.onerror=rej;
+  img.onload=()=>{
+   const canvas=document.createElement('canvas');
+   let w=img.width,h=img.height,max=1200;
+   if(w>h){if(w>max){h=Math.round(h*max/w);w=max}}else{if(h>max){w=Math.round(w*max/h);h=max}}
+   canvas.width=w;canvas.height=h;
+   const ctx=canvas.getContext('2d');
+   ctx.drawImage(img,0,0,w,h);
+   canvas.toBlob(b=>res(b),'image/jpeg',0.9);
+  };
+  reader.readAsDataURL(file);
+ });
+}
+
 sb.auth.onAuthStateChange((ev,s)=>{
  if(s&&s.user){me=s.user;setTimeout(load,0)}else{me=null;authView()}
 });
