@@ -28,10 +28,6 @@ a{color:var(--vi);word-break:break-all}
 .chip{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.2)!important;padding:4px 10px!important}
 .chip .av{margin:0;width:22px;height:22px;font-size:11px}
 
-.sub-genre-tabs{display:flex;background:#fff;border-bottom:1px solid var(--line);padding:0 14px;gap:16px}
-.sub-genre-tabs button{height:40px;font-weight:700;color:var(--mut);border-bottom:2px solid transparent;background:none}
-.sub-genre-tabs button.active{color:var(--pk);border-color:var(--pk)}
-
 .cal{position:sticky;top:calc(env(safe-area-inset-top,0px) + 49px);z-index:4;background:var(--bg);margin:-14px -14px 10px;padding:6px 14px 8px;border-bottom:1px solid var(--line)}
 .calh{display:flex;justify-content:space-between;align-items:center}
 .calh b{font-size:16px}
@@ -115,7 +111,7 @@ label{display:block;font-size:12px;color:var(--mut);margin:12px 0 4px}
 <div id="toast"></div>
 <script>
 const sb = supabase.createClient('https://njzdxjkclaonvtjirrgp.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qemR4amtjbGFvbnZ0amlycmdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0MzY2NjQsImV4cCI6MjEwODAxMjY2NH0.KkV71ATa8YGN33XJgLtmzJTlsHQkmhoqEAg3bO-wX9U');
-let calY=new Date().getFullYear(),calM=new Date().getMonth(),selDate=null,siteSettingsMap={},me=null,prof=null,lives=[],ints=[],profs={},nums={},tab='s',sort='d',showHid=false,authMode='in',tx=0,activeSwipeId=null,currentGenre='live',currentSubGenre='comedy_live';
+let calY=new Date().getFullYear(),calM=new Date().getMonth(),selDate=null,siteSettingsMap={},me=null,prof=null,lives=[],ints=[],profs={},nums={},tab='s',sort='d',showHid=false,authMode='in',tx=0,activeSwipeId=null,currentGenre='live';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safe=u=>/^https?:\/\//.test(u||'')?esc(u):'';
@@ -176,14 +172,7 @@ function getActiveSite(){
  return siteSettingsMap[currentGenre] || {title:'', header_url:''};
 }
 function sorted(){
- const l=lives.filter(x=>{
-  const g=x.genre||'live';
-  if(g!==currentGenre)return false;
-  if(currentGenre==='comedy'){
-   return (x.sub_genre||'comedy_live')===currentSubGenre;
-  }
-  return true;
- }),now=Date.now();
+ const l=lives.filter(x=>(x.genre||'live')===currentGenre),now=Date.now();
  if(sort==='d')l.sort((a,b)=>(a.live_date||'9999').localeCompare(b.live_date||'9999'));
  else{const f=x=>{if(!x.apply_end)return 9e15;const t=new Date(x.apply_end).getTime();return t<now?1e15+t:t};l.sort((a,b)=>f(a)-f(b))}
  return l;
@@ -198,10 +187,6 @@ function render(){
  +'<div class="me"><button class="chip" onclick="myPage()">'+av(prof)+esc(prof&&prof.username)+'</button>'+(host?'<button onclick="siteM()">設定</button>':'')+'</div>'
  +'</div>';
 
- if(currentGenre==='comedy'){
-  h+='<div class="sub-genre-tabs"><button class="'+(currentSubGenre==='comedy_live'?'active':'')+'" onclick="currentSubGenre=\'comedy_live\';selDate=null;render()">お笑いライブ</button><button class="'+(currentSubGenre==='comedy_tv'?'active':'')+'" onclick="currentSubGenre=\'comedy_tv\';selDate=null;render()">番組出演・観覧</button></div>';
- }
-
  h+='<div class="tabs"><button class="'+(tab==='s'?'on':'')+'" onclick="tab=\'s\';render()">スケジュール</button><button class="'+(tab==='n'?'on':'')+'" onclick="tab=\'n\';render()">整理番号</button></div><div class="wrap">';
  h+=tab==='s'?schedView():numView();
  h+='</div>'+(host&&tab==='s'?'<button class="fab" aria-label="イベントを追加" onclick="formM()">+</button>':'');
@@ -211,12 +196,7 @@ function calView(){
  const y=calY,m=calM,first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
  const t=new Date(),ts=t.getFullYear()+'-'+p2(t.getMonth()+1)+'-'+p2(t.getDate());
  const my=new Set(ints.filter(i=>i.user_id===me.id).map(i=>i.live_id));
- const filteredLives=lives.filter(x=>{
-  const g=x.genre||'live';
-  if(g!==currentGenre)return false;
-  if(currentGenre==='comedy'){return (x.sub_genre||'comedy_live')===currentSubGenre;}
-  return true;
- });
+ const filteredLives=lives.filter(x=>(x.genre||'live')===currentGenre);
  let c='<div class="cal"><div class="calh"><button aria-label="前の月" onclick="calMove(-1)">‹</button><b>'+y+'年'+(m+1)+'月</b><button aria-label="次の月" onclick="calMove(1)">›</button></div><div class="cg">';
  '日月火水木金土'.split('').forEach((w,i)=>{c+='<span class="wd '+(i===0?'su':i===6?'sa':'')+'">'+w+'</span>'});
  for(let i=0;i<first;i++)c+='<span></span>';
@@ -237,18 +217,13 @@ function schedView(){
 }
 function card(l){
  const who=ints.filter(i=>i.live_id===l.id),on=who.some(i=>i.user_id===me.id);
- const isTv=l.genre==='comedy' && l.sub_genre==='comedy_tv';
  
  return '<div class="card" onclick="detail(\''+l.id+'\')"><div class="row"><div class="grow"><h3>'+esc(l.title)+'</h3><p class="mut">📍 '+esc(l.venue||'会場未定')+'</p></div>'+(safe(l.image_url)?'<img class="th" src="'+safe(l.image_url)+'" alt="">':'')+'</div>'
  +'<div class="grid">'
- +(isTv?
-   '<div class="b pk"><small>収録日</small><b>'+fd(l.live_date)+'</b></div><div class="b vi"><small>時間</small><b>'+esc(l.start_time||'—')+'</b></div><div class="b wide"><small>テレビ局 / 公開日</small><b>'+esc(l.tv_station||'—')+' / '+fd(l.broadcast_date)+'</b></div>'
-  :
-   '<div class="b pk"><small>開催日</small><b>'+fd(l.live_date)+'</b></div><div class="b vi"><small>チケット種別</small><b>'+esc(l.ticket_type||'—')+'</b></div><div class="b wide"><small>申込受付期間</small><b>'+fdt(l.apply_start)+' 〜 '+fdt(l.apply_end)+'</b></div><div class="b"><small>当落発表</small><b>'+fd(l.result_date)+'</b></div><div class="b"><small>発券開始</small><b>'+fd(l.issue_date)+'</b></div>'
- )
+ +'<div class="b pk"><small>開催日</small><b>'+fd(l.live_date)+'</b></div><div class="b vi"><small>チケット種別</small><b>'+esc(l.ticket_type||'—')+'</b></div><div class="b wide"><small>申込受付期間</small><b>'+fdt(l.apply_start)+' 〜 '+fdt(l.apply_end)+'</b></div><div class="b"><small>当落発表</small><b>'+fd(l.result_date)+'</b></div><div class="b"><small>発券開始</small><b>'+fd(l.issue_date)+'</b></div>'
  +'</div>'
- +(!isTv && who.length?'<div class="avs">'+who.slice(0,6).map(i=>av(profs[i.user_id])).join('')+'<span class="n">'+who.length+'人が行くかも</span></div>':'')
- +'<div class="foot" style="margin-top:10px"><span class="hint">ⓘ タップで詳細</span>'+(!isTv?'<button class="go'+(on?' on':'')+'" onclick="toggleGo(event,\''+l.id+'\')">'+(on?'行くかも！ ✓':'行くかも！')+'</button>':'<span></span>')+'</div></div>';
+ +(who.length?'<div class="avs">'+who.slice(0,6).map(i=>av(profs[i.user_id])).join('')+'<span class="n">'+who.length+'人が行くかも</span></div>':'')
+ +'<div class="foot" style="margin-top:10px"><span class="hint">ⓘ タップで詳細</span><button class="go'+(on?' on':'')+'" onclick="toggleGo(event,\''+l.id+'\')">'+(on?'行くかも！ ✓':'行くかも！')+'</button></div></div>';
 }
 async function toggleGo(e,id){
  e.stopPropagation();
@@ -260,85 +235,49 @@ async function toggleGo(e,id){
 function detail(id){
  const l=lives.find(x=>x.id===id);if(!l)return;
  const who=ints.filter(i=>i.live_id===id),on=who.some(i=>i.user_id===me.id),host=prof&&prof.is_host;
- const isTv=l.genre==='comedy' && l.sub_genre==='comedy_tv';
 
  openM((safe(l.image_url)?'<img class="big" src="'+safe(l.image_url)+'" alt="">':'')+'<h3 style="font-size:22px">'+esc(l.title)+'</h3>'
  +(l.venue?'<p class="mut">📍 '+(safe(l.map_url)?'<a href="'+safe(l.map_url)+'" target="_blank" rel="noopener">'+esc(l.venue)+'</a>':esc(l.venue))+'</p>':'')
- +(isTv?
-   '<div class="sec" style="background:var(--pk2)"><h4>番組情報</h4><p>収録日: <b>'+fd(l.live_date)+'</b></p><p>テレビ局: <b>'+esc(l.tv_station||'—')+'</b></p><p>公開日: <b>'+fd(l.broadcast_date)+'</b></p><p>時間: <b>'+esc(l.start_time||'—')+'</b></p></div>'
-  :
-   '<div class="sec" style="background:var(--pk2)"><h4>イベント情報</h4><p>開催日: <b>'+fd(l.live_date)+'</b></p><p>OPEN '+esc(l.open_time||'—')+' / START '+esc(l.start_time||'—')+'</p><p>形式: '+esc(l.format||'—')+'</p></div>'
-   +'<div class="sec" style="background:var(--vi2)"><h4>チケット情報</h4><p>種別: '+esc(l.ticket_type||'—')+'</p><p>申込受付: '+fdt(l.apply_start)+' 〜 '+fdt(l.apply_end)+'</p><p>当落発表: '+fd(l.result_date)+'</p><p>発券開始: '+fd(l.issue_date)+'</p></div>'
- )
+ +'<div class="sec" style="background:var(--pk2)"><h4>イベント情報</h4><p>開催日: <b>'+fd(l.live_date)+'</b></p><p>OPEN '+esc(l.open_time||'—')+' / START '+esc(l.start_time||'—')+'</p><p>形式: '+esc(l.format||'—')+'</p></div>'
+ +'<div class="sec" style="background:var(--vi2)"><h4>チケット情報</h4><p>種別: '+esc(l.ticket_type||'—')+'</p><p>申込受付: '+fdt(l.apply_start)+' 〜 '+fdt(l.apply_end)+'</p><p>当落発表: '+fd(l.result_date)+'</p><p>発券開始: '+fd(l.issue_date)+'</p></div>'
  +(l.memo?'<div class="sec" style="background:var(--gr)"><h4>メモ</h4><p>'+link(l.memo)+'</p></div>':'')
- +(l.setlist?'<div class="sec" style="background:var(--gr)"><h4>セトリ・内容</h4><p>'+link(l.setlist)+'</p></div>':'')
- +(!isTv?'<div class="sec" style="background:var(--gr)"><h4>行くかも！リスト（'+who.length+'人）</h4>'+(who.length?who.map(i=>'<div class="who">'+av(profs[i.user_id])+esc((profs[i.user_id]||{}).username)+'</div>').join(''):'<p class="mut">まだ誰もいません</p>')+'</div>'+'<button class="btn p" onclick="toggleGo(event,\''+id+'\')">'+(on?'行くかも！を取り消す':'行くかも！')+'</button>':'')
+ +(l.setlist?'<div class="sec" style="background:var(--gr)"><h4>'+(l.genre==='comedy'?'内容メモ':'セトリ')+'</h4><p>'+link(l.setlist)+'</p></div>':'')
+ +'<div class="sec" style="background:var(--gr)"><h4>行くかも！リスト（'+who.length+'人）</h4>'+(who.length?who.map(i=>'<div class="who">'+av(profs[i.user_id])+esc((profs[i.user_id]||{}).username)+'</div>').join(''):'<p class="mut">まだ誰もいません</p>')+'</div><button class="btn p" onclick="toggleGo(event,\''+id+'\')">'+(on?'行くかも！を取り消す':'行くかも！')+'</button>'
  +(host?'<button class="btn" onclick="formM(\''+id+'\')">編集</button><button class="btn d" onclick="delLive(\''+id+'\')">削除</button>':'')
  +'<button class="btn" onclick="closeM()">閉じる</button>');
 }
 function formM(id){
  const l=lives.find(x=>x.id===id)||{};const v=k=>esc(l[k]||'');
- 
  const g = id ? (l.genre || 'live') : currentGenre;
- const sub = id ? (l.sub_genre || 'comedy_live') : currentSubGenre;
- const isTv = (g === 'comedy' && sub === 'comedy_tv');
  const isLive = (g === 'live');
 
  const f=(k,t,lab,ph)=>'<label>'+lab+'</label><input id="f_'+k+'" type="'+t+'" value="'+(t==='datetime-local'?esc(loc(l[k])):v(k))+'"'+(ph?' placeholder="'+ph+'"':'')+'>';
  
- let titleText = id ? 'イベントを編集' : (isLive ? 'ライブを追加' : (sub === 'comedy_live' ? 'お笑いライブを追加' : '番組出演・観覧を追加'));
+ let titleText = id ? 'イベントを編集' : (isLive ? 'ライブを追加' : 'お笑いライブを追加');
+ let formats = isLive ? ['主催','対バン','フェス'] : ['単独ライブ','ライブ・寄席','主催','対バン'];
+ let ticketPh = isLive ? 'ローチケ など' : 'FANYなど';
 
- let h = '<h3>'+titleText+'</h3>';
-
- if(isLive){
-  h += f('title','text','公演名（必須）')
+ let h = '<h3>'+titleText+'</h3>'
+    +  f('title','text','公演名（必須）')
     +  f('venue','text','会場名')
     +  f('map_url','url','マップURL','https://')
     +  f('image_url','url','画像URL（フライヤーなど）','https://')
     +  f('live_date','date','公演日')
     +  '<div class="two"><div>'+f('open_time','time','OPEN')+'</div><div>'+f('start_time','time','START')+'</div></div>'
-    +  '<label>ライブ形式</label><select id="f_format"><option value="">選択なし</option>'+['主催','対バン','フェス'].map(o=>'<option'+(l.format===o?' selected':'')+'>'+o+'</option>').join('')+'</select>'
-    +  f('ticket_type','text','チケット種別','ローチケ など')
+    +  '<label>ライブ形式</label><select id="f_format"><option value="">選択なし</option>'+formats.map(o=>'<option'+(l.format===o?' selected':'')+'>'+o+'</option>').join('')+'</select>'
+    +  f('ticket_type','text','チケット種別',ticketPh)
     +  f('apply_start','datetime-local','申込開始')
     +  f('apply_end','datetime-local','申込締切')
     +  f('result_date','date','当落発表日')
     +  f('issue_date','date','発券開始日')
     +  '<label>メモ（URLは自動でリンクになります）</label><textarea id="f_memo">'+v('memo')+'</textarea>'
-    +  '<label>セトリ</label><textarea id="f_setlist">'+v('setlist')+'</textarea>';
- } else if(!isTv) {
-  h += f('title','text','公演名（必須）')
-    +  f('venue','text','会場名')
-    +  f('map_url','url','マップURL','https://')
-    +  f('image_url','url','画像URL（フライヤーなど）','https://')
-    +  f('live_date','date','公演日')
-    +  '<div class="two"><div>'+f('open_time','time','OPEN')+'</div><div>'+f('start_time','time','START')+'</div></div>'
-    +  '<label>ライブ形式</label><select id="f_format"><option value="">選択なし</option>'+['単独ライブ','ライブ・寄席','主催','対バン'].map(o=>'<option'+(l.format===o?' selected':'')+'>'+o+'</option>').join('')+'</select>'
-    +  f('ticket_type','text','チケット種別','ローチケ など')
-    +  f('apply_start','datetime-local','申込開始')
-    +  f('apply_end','datetime-local','申込締切')
-    +  f('result_date','date','当落発表日')
-    +  f('issue_date','date','発券開始日')
-    +  '<label>メモ（URLは自動でリンクになります）</label><textarea id="f_memo">'+v('memo')+'</textarea>'
-    +  '<label>内容メモ</label><textarea id="f_setlist">'+v('setlist')+'</textarea>';
- } else {
-  h += f('title','text','番組名（必須）')
-    +  f('tv_station','text','テレビ局')
-    +  f('venue','text','会場名')
-    +  f('map_url','url','マップURL','https://')
-    +  f('image_url','url','画像URL（フライヤーなど）','https://')
-    +  f('live_date','date','収録日')
-    +  f('broadcast_date','date','公開日')
-    +  '<label>時間（例: 0:00〜0:00）</label><input id="f_tv_time" type="text" value="'+v('start_time')+'" placeholder="0:00〜0:00">'
-    +  '<label>メモ（URLは自動でリンクになります）</label><textarea id="f_memo">'+v('memo')+'</textarea>'
-    +  '<label>内容メモ</label><textarea id="f_setlist">'+v('setlist')+'</textarea>';
- }
+    +  '<label>'+(isLive ? 'セトリ' : '内容メモ')+'</label><textarea id="f_setlist">'+v('setlist')+'</textarea>'
+    +  '<button class="btn p" onclick="saveLive(\''+(id||'')+'\',\''+g+'\')">保存する</button><button class="btn" onclick="closeM()">キャンセル</button>';
 
- h += '<button class="btn p" onclick="saveLive(\''+(id||'')+'\',\''+g+'\',\''+sub+'\')">保存する</button><button class="btn" onclick="closeM()">キャンセル</button>';
  openM(h);
 }
 
-async function saveLive(id, genre, subGenre){
- // 空文字をnullに正しく変換する関数
+async function saveLive(id, genre){
  const getv=k=>{
   const el=$('#f_'+k);
   if(!el) return null;
@@ -346,33 +285,24 @@ async function saveLive(id, genre, subGenre){
   return val === '' ? null : val;
  };
  
- const o={genre: genre, sub_genre: subGenre};
+ const o={genre: genre};
 
  o.title=getv('title');
- if(!o.title)return toast('名称は必須です');
+ if(!o.title)return toast('公演名は必須です');
 
  o.venue=getv('venue');
  o.map_url=getv('map_url');
  o.image_url=getv('image_url');
  o.memo=getv('memo');
  o.setlist=getv('setlist');
+ o.live_date=getv('live_date');
+ o.open_time=getv('open_time');
+ o.start_time=getv('start_time');
+ o.format=getv('format');
+ o.ticket_type=getv('ticket_type');
 
- if(genre==='comedy' && subGenre==='comedy_tv'){
-  o.live_date=getv('live_date');
-  o.tv_station=getv('tv_station');
-  o.broadcast_date=getv('broadcast_date');
-  o.start_time=getv('tv_time');
-  o.open_time=null; o.format=null; o.ticket_type=null; o.apply_start=null; o.apply_end=null; o.result_date=null; o.issue_date=null;
- }else{
-  o.live_date=getv('live_date');
-  o.open_time=getv('open_time');
-  o.start_time=getv('start_time');
-  o.format=getv('format');
-  o.ticket_type=getv('ticket_type');
-  o.tv_station=null; o.broadcast_date=null;
-  ['apply_start','apply_end'].forEach(k=>{const x=getv(k);o[k]=x?new Date(x).toISOString():null});
-  ['result_date','issue_date'].forEach(k=>{o[k]=getv(k);});
- }
+ ['apply_start','apply_end'].forEach(k=>{const x=getv(k);o[k]=x?new Date(x).toISOString():null});
+ ['result_date','issue_date'].forEach(k=>{o[k]=getv(k);});
 
  const r=id?await sb.from('lives').update(o).eq('id',id):await sb.from('lives').insert(o);
  if(r.error)return toast('失敗: '+r.error.message);
@@ -400,12 +330,7 @@ function numView(){
  }).join('');
 }
 function sorted0(){
- return lives.filter(x=>{
-  const g=x.genre||'live';
-  if(g!==currentGenre)return false;
-  if(currentGenre==='comedy'){return (x.sub_genre||'comedy_live')===currentSubGenre;}
-  return true;
- }).sort((a,b)=>(a.live_date||'9999').localeCompare(b.live_date||'9999'));
+ return lives.filter(x=>(x.genre||'live')===currentGenre).sort((a,b)=>(a.live_date||'9999').localeCompare(b.live_date||'9999'));
 }
 function swipe(e,id){
  if(e.changedTouches[0].clientX-tx<-40){
