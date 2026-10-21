@@ -245,7 +245,7 @@ function schedView(){
  const futureCount=arr.filter(l=>!isPastDate(l.live_date)).length;
  const totalCount=arr.length;
  let h=calView()+(selDate?'<div class="flt"><span>'+fd(selDate)+' の予定</span><button class="hint" onclick="selDate=null;render()">解除</button></div>':'')
- +'<div class="bar"><b>未来 '+futureCount+'件 / 全 '+totalCount+'件</b><select onchange="sort=this.value;render()"><option value="d"'+(sort==='d'?' selected':'')+'>日付順</option><option value="a"'+(sort==='a'?' selected':'')+'>申込順（締切が近い順）</option></select></div>';
+ +'<div class="bar"><b>予定 '+futureCount+'件 / 全 '+totalCount+'件</b><select onchange="sort=this.value;render()"><option value="d"'+(sort==='d'?' selected':'')+'>日付順</option><option value="a"'+(sort==='a'?' selected':'')+'>申込順（締切が近い）</option></select></div>';
  if(!arr.length)return h+'<div class="empty">'+(selDate?'この日の予定はありません。':'まだ予定がありません。<br>ホストが追加すると、ここに表示されます。')+'</div>';
  return h+arr.map(card).join('');
 }
