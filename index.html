@@ -58,6 +58,14 @@ a{color:var(--vi);word-break:break-all}
 .bar{display:flex;justify-content:space-between;align-items:center;margin:4px 0 12px;gap:8px}
 .bar select{width:auto;padding:6px 10px}
 
+/* アラートバッジ */
+.deadline-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;margin-top:4px}
+.deadline-badge.yellow{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.deadline-badge.red{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+
+/* ポップアップ用閉じるボタン */
+.modal-close-btn{position:absolute;top:12px;right:14px;font-size:22px;color:var(--mut);cursor:pointer;padding:4px 8px;line-height:1}
+
 /* スワイプアクション */
 .swipe-wrap{position:relative;overflow:hidden;border-radius:18px;margin-bottom:14px;background:#95a5a6}
 .swipe-wrap.is-hid{background:var(--vi)}
@@ -100,7 +108,7 @@ h3{margin:0;font-size:19px;font-weight:800;line-height:1.3}
 .empty{text-align:center;color:var(--mut);padding:36px 12px}
 .mask{position:fixed;inset:0;background:rgba(20,10,40,.55);z-index:20;display:none;align-items:flex-end;justify-content:center}
 .mask.on{display:flex}
-.sheet{background:#fff;width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom,0))}
+.sheet{position:relative;background:#fff;width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom,0))}
 .sheet img.big{width:100%;border-radius:14px;margin-bottom:12px}
 .sec{border-radius:14px;padding:12px 14px;margin:12px 0}
 .sec h4{margin:0 0 6px;font-size:14px}
@@ -143,6 +151,60 @@ const closeM=()=>$('#mask').classList.remove('on');
 const openM=h=>{$('#sheet').innerHTML=h;$('#mask').classList.add('on')};
 $('#mask').addEventListener('click',e=>{if(e.target.id==='mask')closeM()});
 
+// 申込締切の残り日数アラート判定
+function getDeadlineAlert(applyEnd){
+ if(!applyEnd)return null;
+ const now=new Date();
+ const end=new Date(applyEnd);
+ const diffHours=(end-now)/(1000*60*60);
+ if(diffHours<0 || diffHours>72)return null; // 3日(72時間)以内のみ対象
+ 
+ const days=Math.ceil(diffHours/24);
+ if(days<=1){
+  return {text:'⚠️ 申込締切まで 残り1日', color:'red'};
+ }else{
+  return {text:`⚠️ 申込締切まで 残り${days}日`, color:'yellow'};
+ }
+}
+
+// 初回起動時のポップアップチェック
+function checkDailyDeadlineAlert(){
+ const todayStr = getTodayStr();
+ const storageKey = 'koyake_alert_dismissed_' + todayStr;
+ if(localStorage.getItem(storageKey)) return; // 今日すでに閉じていれば表示しない
+
+ // 3日以内でまだ締切ていないイベントを探す
+ const urgentLives = lives.filter(l=>{
+  const alert = getDeadlineAlert(l.apply_end);
+  return alert !== null;
+ });
+
+ if(urgentLives.length === 0) return;
+
+ // 最も締切が近いものをピックアップしてポップアップ表示
+ const target = urgentLives.sort((a,b)=>new Date(a.apply_end)-new Date(b.apply_end))[0];
+ const alertInfo = getDeadlineAlert(target.apply_end);
+ const badgeClass = alertInfo.color === 'red' ? 'red' : 'yellow';
+
+ openM(
+  '<span class="modal-close-btn" onclick="dismissDailyAlert(\''+storageKey+'\')">&times;</span>' +
+  '<h3 style="font-size:20px; color:var(--pk); margin-bottom:8px;">⚠️ 申込締切が迫っています！</h3>' +
+  '<p class="mut">本日チェックすべき締切間近のイベントがあります。</p>' +
+  '<div class="sec" style="background:var(--pk2)">' +
+  '<h4>' + esc(target.title) + '</h4>' +
+  '<p>申込締切: <b>' + fdt(target.apply_end) + '</b></p>' +
+  '<div class="deadline-badge ' + badgeClass + '">' + alertInfo.text + '</div>' +
+  '</div>' +
+  '<button class="btn p" onclick="dismissDailyAlert(\''+storageKey+'\'); detail(\''+target.id+'\')">詳細を確認する</button>' +
+  '<button class="btn" onclick="dismissDailyAlert(\''+storageKey+'\')">閉じる（今日はもう表示しない）</button>'
+ );
+}
+
+function dismissDailyAlert(storageKey){
+ localStorage.setItem(storageKey, 'true');
+ closeM();
+}
+
 function authView(){
  const up=authMode==='up';
  $('#app').innerHTML='<div class="auth"><h2>カレンダーログイン</h2>'
@@ -184,6 +246,9 @@ async function load(){
  siteSettingsMap={};
  (q[4].data||[]).forEach(s=>{ siteSettingsMap[s.genre||'live'] = s; });
  render();
+
+ // データのロード完了後に初回ポップアップチェックを実行
+ setTimeout(checkDailyDeadlineAlert, 300);
 }
 function getActiveSite(){
  return siteSettingsMap[currentGenre] || {title:'', header_url:''};
@@ -313,9 +378,12 @@ function card(l){
  const who=ints.filter(i=>i.live_id===l.id),on=who.some(i=>i.user_id===me.id);
  const past=isPastDate(l.live_date);
  
+ const alertInfo = getDeadlineAlert(l.apply_end);
+ const deadlineBadgeHtml = alertInfo ? '<div class="deadline-badge '+alertInfo.color+'">'+alertInfo.text+'</div>' : '';
+ 
  return '<div class="card'+(past?' past':'')+'" onclick="detail(\''+l.id+'\')"><div class="row"><div class="grow"><h3>'+esc(l.title)+'</h3><p class="mut">📍 '+esc(l.venue||'会場未定')+'</p></div>'+(safe(l.image_url)?'<img class="th" src="'+safe(l.image_url)+'" alt="">':'')+'</div>'
  +'<div class="grid">'
- +'<div class="b pk"><small>開催日</small><b>'+fd(l.live_date)+'</b></div><div class="b vi"><small>チケット種別</small><b>'+esc(l.ticket_type||'—')+'</b></div><div class="b wide"><small>申込受付期間</small><b>'+fdt(l.apply_start)+' 〜 '+fdt(l.apply_end)+'</b></div><div class="b"><small>当落発表</small><b>'+fd(l.result_date)+'</b></div><div class="b"><small>発券開始</small><b>'+fd(l.issue_date)+'</b></div>'
+ +'<div class="b pk"><small>開催日</small><b>'+fd(l.live_date)+'</b></div><div class="b vi"><small>チケット種別</small><b>'+esc(l.ticket_type||'—')+'</b></div><div class="b wide"><small>申込受付期間</small><b>'+fdt(l.apply_start)+' 〜 '+fdt(l.apply_end)+'</b>'+deadlineBadgeHtml+'</div><div class="b"><small>当落発表</small><b>'+fd(l.result_date)+'</b></div><div class="b"><small>発券開始</small><b>'+fd(l.issue_date)+'</b></div>'
  +'</div>'
  +(who.length?'<div class="avs">'+who.slice(0,6).map(i=>av(profs[i.user_id])).join('')+'<span class="n">'+who.length+'人が行くかも</span></div>':'')
  +'<div class="foot" style="margin-top:10px"><span class="hint">ⓘ タップで詳細</span><button class="go'+(on?' on':'')+'" onclick="toggleGo(event,\''+l.id+'\')">'+(on?'行くかも！ ✓':'行くかも！')+'</button></div></div>';
@@ -331,10 +399,13 @@ function detail(id){
  const l=lives.find(x=>x.id===id);if(!l)return;
  const who=ints.filter(i=>i.live_id===id),on=who.some(i=>i.user_id===me.id),host=prof&&prof.is_host;
 
+ const alertInfo = getDeadlineAlert(l.apply_end);
+ const deadlineBadgeHtml = alertInfo ? '<div class="deadline-badge '+alertInfo.color+'" style="margin-top:6px;">'+alertInfo.text+'</div>' : '';
+
  openM((safe(l.image_url)?'<img class="big" src="'+safe(l.image_url)+'" alt="">':'')+'<h3 style="font-size:22px">'+esc(l.title)+'</h3>'
  +(l.venue?'<p class="mut">📍 '+(safe(l.map_url)?'<a href="'+safe(l.map_url)+'" target="_blank" rel="noopener">'+esc(l.venue)+'</a>':esc(l.venue))+'</p>':'')
  +'<div class="sec" style="background:var(--pk2)"><h4>イベント情報</h4><p>開催日: <b>'+fd(l.live_date)+'</b></p><p>OPEN '+esc(l.open_time||'—')+' / START '+esc(l.start_time||'—')+'</p><p>ジャンル: '+(l.genre==='comedy'?'お笑い':'音楽')+' / 形式: '+esc(l.format||'—')+'</p></div>'
- +'<div class="sec" style="background:var(--vi2)"><h4>チケット情報</h4><p>種別: '+esc(l.ticket_type||'—')+'</p><p>申込受付: '+fdt(l.apply_start)+' 〜 '+fdt(l.apply_end)+'</p><p>当落発表: '+fd(l.result_date)+'</p><p>発券開始: '+fd(l.issue_date)+'</p></div>'
+ +'<div class="sec" style="background:var(--vi2)"><h4>チケット情報</h4><p>種別: '+esc(l.ticket_type||'—')+'</p><p>申込受付: '+fdt(l.apply_start)+' 〜 '+fdt(l.apply_end)+'</p>'+deadlineBadgeHtml+'<p style="margin-top:6px;">当落発表: '+fd(l.result_date)+'</p><p>発券開始: '+fd(l.issue_date)+'</p></div>'
  +(l.memo?'<div class="sec" style="background:var(--gr)"><h4>メモ</h4><p>'+link(l.memo)+'</p></div>':'')
  +(l.setlist?'<div class="sec" style="background:var(--gr)"><h4>'+(l.genre==='comedy'?'内容メモ':'セトリ')+'</h4><p>'+link(l.setlist)+'</p></div>':'')
  +'<div class="sec" style="background:var(--gr)"><h4>行くかも！リスト（'+who.length+'人）</h4>'+(who.length?who.map(i=>'<div class="who">'+av(profs[i.user_id])+esc((profs[i.user_id]||{}).username)+'</div>').join(''):'<p class="mut">まだ誰もいません</p>')+'</div><button class="btn p" onclick="toggleGo(event,\''+id+'\')">'+(on?'行くかも！を取り消す':'行くかも！')+'</button>'
@@ -349,7 +420,7 @@ function formM(id){
  const f=(k,t,lab,ph)=>'<label>'+lab+'</label><input id="f_'+k+'" type="'+t+'" value="'+(t==='datetime-local'?esc(loc(l[k])):v(k))+'"'+(ph?' placeholder="'+ph+'"':'')+'>';
  
  let titleText = id ? 'イベントを編集' : (isLive ? '音楽ライブを追加' : 'お笑いライブを追加');
- let formats = isLive ? ['主催','対バン','フェス'] : ['単独','寄席','企画','その他'];
+ let formats = isLive ? ['主催','対バン','フェス'] : ['単独','寄席','その他興行'];
  let ticketPh = isLive ? 'ローチケ など' : 'FANYなど';
 
  let h = '<h3>'+titleText+'</h3>'
@@ -375,7 +446,7 @@ function formM(id){
 
 function toggleGenreForm(v){
  const isLive = (v === 'live');
- const formats = isLive ? ['主催','対バン','フェス'] : ['単独','寄席','企画','その他'];
+ const formats = isLive ? ['主催','対バン','フェス'] : ['単独','寄席','その他興行'];
  const select = $('#f_format');
  if(select){
   select.innerHTML = '<option value="">選択なし</option>' + formats.map(o=>'<option>'+o+'</option>').join('');
