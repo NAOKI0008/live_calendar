@@ -503,7 +503,7 @@ function numView(){
    +'<div class="swipe-action" ontouchend="setHid(\''+x.id+'\','+!hd+');event.stopPropagation()" onclick="setHid(\''+x.id+'\','+!hd+')">'+(hd?'表示':'非表示')+'</div>'
    +'<div class="card num'+(hd?' hid':'')+(past?' past':'')+(isSwiped?' swiped':'')+'" ontouchstart="touchStart(event,\''+x.id+'\')" ontouchmove="touchMove(event,\''+x.id+'\')" ontouchend="swipe(event,\''+x.id+'\')">'
    +'<div class="grow"><b style="color:var(--pk)">'+fd(x.live_date)+'</b><h3 style="font-size:17px">'+esc(x.title)+'</h3><p class="mut">📍 '+esc(x.venue||'会場未定')+'</p></div>'
-   +'<div class="nb" onclick="handleNumBoxClick(event,\''+x.id+'\')"><small>整理番号 / 座席</small><b>'+esc(n.number||'—')+'</b></div>'
+   +'<div class="nb" ontouchend="handleNumBoxTap(event,\''+x.id+'\')" onclick="handleNumBoxTap(event,\''+x.id+'\')"><small>整理番号 / 座席</small><b>'+esc(n.number||'—')+'</b></div>'
    +'</div></div>';
  }).join('');
 }
@@ -531,11 +531,15 @@ function swipe(e,id){
   if(diff<-40)activeSwipeId=id;
  }
  currentTouchTarget=null;
- render();
+ // スワイプの移動があった場合のみ再描画
+ if(isMoved){
+  render();
+ }
 }
-function handleNumBoxClick(e,id){
- e.stopPropagation(); // カード全体の動きに影響させない
- if(isMoved) return; // スワイプ操作中の場合は処理しない
+function handleNumBoxTap(e,id){
+ e.stopPropagation();
+ if(e.type==='touchend') e.preventDefault(); // クリックの遅延判定と二重発火を防止
+ if(isMoved) return; // スワイプ操作中の場合はモーダルを開かない
  if(activeSwipeId===id){
   activeSwipeId=null;
   render();
