@@ -23,12 +23,20 @@ a{color:var(--vi);word-break:break-all}
 .genre-bar button{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.3);padding:6px 12px;border-radius:99px;font-size:13px;font-weight:700;color:#fff}
 .genre-bar button.active{background:#fff;color:var(--vi);border-color:#fff}
 
-/* 右側配置の整理：年度 -> info -> アイコン */
+/* 右側配置の整理 */
 .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .year-select{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);color:#fff;font-weight:700;font-size:12px;padding:4px 8px;border-radius:8px;width:auto;cursor:pointer}
 .year-select option{color:var(--ink);background:#fff}
 
-.info-btn{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);color:#fff;font-weight:700;font-size:12px;padding:4px 10px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:4px}
+/* 最下段の横並びエリア */
+.hero-bottom-row{display:flex;align-items:center;gap:6px}
+
+/* infoボタンと未読赤丸バッジ */
+.info-btn-wrap{position:relative;display:inline-block}
+.info-btn{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);color:#fff;font-weight:700;font-size:12px;padding:6px 12px;border-radius:99px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.unread-badge{position:absolute;top:-4px;left:-4px;background:#e74c3c;color:#fff;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:1.5px solid #fff;line-height:1;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+
+.setting-btn{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);color:#fff;font-weight:700;font-size:12px;padding:4px 10px;border-radius:8px;cursor:pointer}
 
 .me{display:flex;align-items:center;gap:6px;font-size:12px}
 .me button{background:rgba(255,255,255,.2);padding:6px 12px;border-radius:99px;font-size:12px;color:#fff;font-weight:700}
@@ -166,6 +174,15 @@ const closeM=()=>$('#mask').classList.remove('on');
 const openM=h=>{$('#sheet').innerHTML=h;$('#mask').classList.add('on')};
 $('#mask').addEventListener('click',e=>{if(e.target.id==='mask')closeM()});
 
+// 未読件数の取得関数
+function getUnreadInfoCount(){
+ if(!announcements.length) return 0;
+ const lastSeenId = localStorage.getItem('koyake_last_seen_info_id');
+ if(!lastSeenId) return announcements.length;
+ const idx = announcements.findIndex(a => a.id === lastSeenId);
+ return idx === -1 ? announcements.length : idx;
+}
+
 // 申込締切の残り日数アラート判定
 function getDeadlineAlert(applyEnd){
  if(!applyEnd)return null;
@@ -206,7 +223,6 @@ function checkInitialPopups(){
 function dismissInfoAlert(storageKey){
  localStorage.setItem(storageKey, 'true');
  closeM();
- // お知らせを閉じたら締切アラートを続けてチェック
  setTimeout(checkDailyDeadlineAlert, 300);
 }
 
@@ -340,6 +356,9 @@ function render(){
  const yearOptions = '<option value="ALL"'+(selYear==='ALL'?' selected':'')+'>全年度</option>'
  + years.map(y=>'<option value="'+y+'"'+(selYear===y?' selected':'')+'>'+y+'年</option>').join('');
 
+ const unreadCount = getUnreadInfoCount();
+ const unreadBadgeHtml = unreadCount > 0 ? '<span class="unread-badge">'+unreadCount+'</span>' : '';
+
  let h='<div class="hero"'+hb+'>'
  +'<div class="genre-bar">'
  +'<button class="'+(currentGenre==='live'?'active':'')+'" onclick="currentGenre=\'live\';selDate=null;render()">音楽</button>'
@@ -348,8 +367,11 @@ function render(){
  +'</div>'
  +'<div class="hero-right">'
  +'<select class="year-select" onchange="selYear=this.value;render()">'+yearOptions+'</select>'
- +'<button class="info-btn" onclick="openInfoModal()">ℹ️ info</button>'
- +'<div class="me"><button class="chip" onclick="myPage()">'+av(prof)+esc(prof&&prof.username)+'</button>'+(host?'<button onclick="siteM()">設定</button>':'')+'</div>'
+ +(host ? '<button class="setting-btn" onclick="siteM()">設定</button>' : '')
+ +'<div class="hero-bottom-row">'
+ +'<div class="info-btn-wrap">'+unreadBadgeHtml+'<button class="info-btn" onclick="openInfoModal()">info</button></div>'
+ +'<div class="me"><button class="chip" onclick="myPage()">'+av(prof)+esc(prof&&prof.username)+'</button></div>'
+ +'</div>'
  +'</div>'
  +'</div>';
 
@@ -373,6 +395,12 @@ function render(){
 
 // info modal（お知らせ一覧）
 function openInfoModal(){
+ // 開いた瞬間に最新のお知らせを既読として登録しバッジを消す
+ if(announcements.length > 0){
+  localStorage.setItem('koyake_last_seen_info_id', announcements[0].id);
+  render(); // バッジ更新のために描画更新
+ }
+
  let html = '<span class="modal-close-btn" onclick="closeM()">&times;</span>'
           + '<h3 style="font-size:20px; margin-bottom:12px;">📢 お知らせ一覧</h3>';
  if(!announcements.length){
