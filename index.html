@@ -540,7 +540,7 @@ function formM(id){
  const f=(k,t,lab,ph)=>'<label>'+lab+'</label><input id="f_'+k+'" type="'+t+'" value="'+(t==='datetime-local'?esc(loc(l[k])):v(k))+'"'+(ph?' placeholder="'+ph+'"':'')+'>';
  
  let titleText = id ? 'イベントを編集' : (isLive ? '音楽ライブを追加' : 'お笑いライブを追加');
- let formats = isLive ? ['主催','対バン','フェス'] : ['単独','寄席','その他興行'];
+ let formats = isLive ? ['主催','対バン','フェス'] : ['単独','寄席','その他'];
  let ticketPh = isLive ? 'ローチケ など' : 'FANYなど';
 
  let h = '<h3>'+titleText+'</h3>'
@@ -566,7 +566,7 @@ function formM(id){
 
 function toggleGenreForm(v){
  const isLive = (v === 'live');
- const formats = isLive ? ['主催','対バン','フェス'] : ['単独','寄席','その他興行'];
+ const formats = isLive ? ['主催','対バン','フェス'] : ['単独','寄席','その他'];
  const select = $('#f_format');
  if(select){
   select.innerHTML = '<option value="">選択なし</option>' + formats.map(o=>'<option>'+o+'</option>').join('');
