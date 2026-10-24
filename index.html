@@ -18,14 +18,17 @@ a{color:var(--vi);word-break:break-all}
 :focus-visible{outline:3px solid var(--vi);outline-offset:2px}
 
 /* ヘッダー周り（左右配置） */
-.hero{height:140px;background:linear-gradient(135deg,#2a1559 0%,#6d3fd1 55%,#d6458f 120%);color:#fff;display:flex;align-items:flex-end;justify-content:space-between;padding:16px;background-size:cover;background-position:center}
+.hero{height:160px;background:linear-gradient(135deg,#2a1559 0%,#6d3fd1 55%,#d6458f 120%);color:#fff;display:flex;align-items:flex-end;justify-content:space-between;padding:16px;background-size:cover;background-position:center}
 .genre-bar{display:flex;gap:6px}
 .genre-bar button{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.3);padding:6px 12px;border-radius:99px;font-size:13px;font-weight:700;color:#fff}
 .genre-bar button.active{background:#fff;color:var(--vi);border-color:#fff}
 
-.hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+/* 右側配置の整理：年度 -> info -> アイコン */
+.hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .year-select{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);color:#fff;font-weight:700;font-size:12px;padding:4px 8px;border-radius:8px;width:auto;cursor:pointer}
 .year-select option{color:var(--ink);background:#fff}
+
+.info-btn{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);color:#fff;font-weight:700;font-size:12px;padding:4px 10px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:4px}
 
 .me{display:flex;align-items:center;gap:6px;font-size:12px}
 .me button{background:rgba(255,255,255,.2);padding:6px 12px;border-radius:99px;font-size:12px;color:#fff;font-weight:700}
@@ -100,7 +103,12 @@ h3{margin:0;font-size:19px;font-weight:800;line-height:1.3}
 .avs{display:flex;align-items:center;margin-top:10px}
 .av{width:28px;height:28px;border-radius:50%;object-fit:cover;background:var(--vi);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid #fff;margin-right:-8px;flex:none}
 .avs span.n{margin-left:16px;font-size:12px;color:var(--mut)}
-.fab{position:fixed;right:18px;bottom:calc(22px + env(safe-area-inset-bottom,0));width:58px;height:58px;border-radius:50%;background:var(--pk);color:#fff;font-size:32px;box-shadow:0 6px 18px rgba(214,69,143,.45);z-index:6}
+
+/* 管理者アクションボタン（右下固定） */
+.admin-actions{position:fixed;right:18px;bottom:calc(22px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;gap:12px;z-index:6}
+.fab{width:58px;height:58px;border-radius:50%;background:var(--pk);color:#fff;font-size:32px;box-shadow:0 6px 18px rgba(214,69,143,.45);display:flex;align-items:center;justify-content:center}
+.fab-mail{width:50px;height:50px;border-radius:50%;background:var(--vi);color:#fff;font-size:22px;box-shadow:0 4px 14px rgba(109,63,209,.4);display:flex;align-items:center;justify-content:center;align-self:center}
+
 .num{display:flex;justify-content:space-between;align-items:center;gap:12px;touch-action:pan-y}
 .nb{min-width:92px;text-align:center;border:1.5px solid #dccdf8;background:var(--vi2);border-radius:14px;padding:8px 10px;cursor:pointer}
 .nb:active{background:#e9dffc}
@@ -124,6 +132,12 @@ label{display:block;font-size:12px;color:var(--mut);margin:12px 0 4px}
 .who{display:flex;align-items:center;gap:8px;margin:6px 0}
 .who .av{margin:0;border:0}
 #toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:99px;font-size:13px;z-index:30;display:none}
+
+/* info一覧用デザイン（点線区切り） */
+.info-item{padding:14px 0;border-bottom:1px dotted var(--mut)}
+.info-item:last-child{border-bottom:none}
+.info-date{font-size:13px;font-weight:700;color:var(--mut);margin-bottom:4px}
+.info-body{font-size:14px;color:var(--ink);white-space:pre-wrap;line-height:1.6}
 </style>
 </head>
 <body>
@@ -132,7 +146,7 @@ label{display:block;font-size:12px;color:var(--mut);margin:12px 0 4px}
 <div id="toast"></div>
 <script>
 const sb = supabase.createClient('https://njzdxjkclaonvtjirrgp.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qemR4amtjbGFvbnZ0amlycmdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0MzY2NjQsImV4cCI6MjEwODAxMjY2NH0.KkV71ATa8YGN33XJgLtmzJTlsHQkmhoqEAg3bO-wX9U');
-let calY=new Date().getFullYear(),calM=new Date().getMonth(),selDate=null,siteSettingsMap={},me=null,prof=null,lives=[],ints=[],profs={},nums={},tab='s',sort='d',showHid=false,authMode='in',tx=0,isMoved=false,activeSwipeId=null,currentGenre='live',selYear='ALL';
+let calY=new Date().getFullYear(),calM=new Date().getMonth(),selDate=null,siteSettingsMap={},me=null,prof=null,lives=[],ints=[],profs={},nums={},announcements=[],tab='s',sort='d',showHid=false,authMode='in',tx=0,isMoved=false,activeSwipeId=null,currentGenre='live',selYear='ALL';
 let currentTouchTarget=null;
 
 const $=s=>document.querySelector(s);
@@ -168,11 +182,38 @@ function getDeadlineAlert(applyEnd){
  }
 }
 
-// 初回起動時のポップアップチェック
+// 初回起動時のポップアップチェック（お知らせ ＆ 締切アラート）
+function checkInitialPopups(){
+ // 1. お知らせの初回通知チェック
+ if(announcements.length > 0){
+  const latestInfo = announcements[0]; // 作成日時降順で一番新しいもの
+  const storageKey = 'koyake_announcement_seen_' + latestInfo.id;
+  if(!localStorage.getItem(storageKey)){
+   openM(
+    '<span class="modal-close-btn" onclick="dismissInfoAlert(\''+storageKey+'\')">&times;</span>' +
+    '<h3 style="font-size:20px; color:var(--vi); margin-bottom:12px;">📢お知らせ📢</h3>' +
+    '<div class="sec" style="background:var(--vi2); white-space:pre-wrap; font-size:15px; line-height:1.6;">' + link(latestInfo.body) + '</div>' +
+    '<button class="btn p" onclick="dismissInfoAlert(\''+storageKey+'\')">閉じる</button>'
+   );
+   return; // お知らせが表示された場合は締切アラートは次回へ
+  }
+ }
+
+ // 2. 締切アラートのチェック
+ checkDailyDeadlineAlert();
+}
+
+function dismissInfoAlert(storageKey){
+ localStorage.setItem(storageKey, 'true');
+ closeM();
+ // お知らせを閉じたら締切アラートを続けてチェック
+ setTimeout(checkDailyDeadlineAlert, 300);
+}
+
 function checkDailyDeadlineAlert(){
  const todayStr = getTodayStr();
  const storageKey = 'koyake_alert_dismissed_' + todayStr;
- if(localStorage.getItem(storageKey)) return; // 今日すでに閉じていれば表示しない
+ if(localStorage.getItem(storageKey)) return;
 
  const urgentLives = lives.filter(l=>{
   const alert = getDeadlineAlert(l.apply_end);
@@ -234,19 +275,21 @@ async function load(){
   sb.from('interests').select('*'),
   sb.from('profiles').select('*'),
   sb.from('my_numbers').select('*'),
-  sb.from('site_settings').select('*')
+  sb.from('site_settings').select('*'),
+  sb.from('announcements').select('*').order('created_at',{ascending:false})
  ]);
  lives=q[0].data||[];
  ints=q[1].data||[];
  profs={};(q[2].data||[]).forEach(p=>profs[p.id]=p);
  nums={};(q[3].data||[]).forEach(n=>nums[n.live_id]=n);
  prof=profs[me.id]||{};
+ announcements=q[5].data||[];
  
  siteSettingsMap={};
  (q[4].data||[]).forEach(s=>{ siteSettingsMap[s.genre||'live'] = s; });
  render();
 
- setTimeout(checkDailyDeadlineAlert, 300);
+ setTimeout(checkInitialPopups, 300);
 }
 function getActiveSite(){
  return siteSettingsMap[currentGenre] || {title:'', header_url:''};
@@ -305,6 +348,7 @@ function render(){
  +'</div>'
  +'<div class="hero-right">'
  +'<select class="year-select" onchange="selYear=this.value;render()">'+yearOptions+'</select>'
+ +'<button class="info-btn" onclick="openInfoModal()">ℹ️ info</button>'
  +'<div class="me"><button class="chip" onclick="myPage()">'+av(prof)+esc(prof&&prof.username)+'</button>'+(host?'<button onclick="siteM()">設定</button>':'')+'</div>'
  +'</div>'
  +'</div>';
@@ -315,9 +359,59 @@ function render(){
  +'<button class="'+(tab==='n'?'on':'')+'" onclick="tab=\'n\';render()">整理番号</button>'
  +'</div><div class="wrap">';
  h+=tab==='s'?schedView():(tab==='i'?interestView():numView());
- h+='</div>'+(host&&tab==='s'?'<button class="fab" aria-label="イベントを追加" onclick="formM()">+</button>':'');
+ h+='</div>';
+ 
+ if(host&&tab==='s'){
+  h+='<div class="admin-actions">'
+    +'<button class="fab-mail" aria-label="お知らせを作成" onclick="openAnnouncementForm()">✉️</button>'
+    +'<button class="fab" aria-label="イベントを追加" onclick="formM()">+</button>'
+    +'</div>';
+ }
+
  $('#app').innerHTML=h;
 }
+
+// info modal（お知らせ一覧）
+function openInfoModal(){
+ let html = '<span class="modal-close-btn" onclick="closeM()">&times;</span>'
+          + '<h3 style="font-size:20px; margin-bottom:12px;">📢 お知らせ一覧</h3>';
+ if(!announcements.length){
+  html += '<p class="mut" style="text-align:center; padding:20px 0;">まだお知らせはありません。</p>';
+ }else{
+  html += announcements.map(a=>{
+   const d = new Date(a.created_at);
+   const dateStr = d.getFullYear() + '.' + p2(d.getMonth()+1) + '.' + p2(d.getDate());
+   return '<div class="info-item">'
+        + '<div class="info-date">' + dateStr + '</div>'
+        + '<div class="info-body">' + link(a.body) + '</div>'
+        + '</div>';
+  }).join('');
+ }
+ html += '<button class="btn" style="margin-top:16px;" onclick="closeM()">閉じる</button>';
+ openM(html);
+}
+
+// 管理者用のお知らせ作成フォーム
+function openAnnouncementForm(){
+ openM(
+  '<h3>お知らせを作成</h3>' +
+  '<p class="mut">送信すると全ユーザーの初回起動時にポップアップ通知されます。</p>' +
+  '<label>本文</label><textarea id="f_ann_body" placeholder="お知らせを入力してください..."></textarea>' +
+  '<button class="btn p" onclick="saveAnnouncement()">送信する</button>' +
+  '<button class="btn" onclick="closeM()">キャンセル</button>'
+ );
+}
+
+async function saveAnnouncement(){
+ const body = $('#f_ann_body').value.trim();
+ if(!body) return toast('本文を入力してください');
+ const r = await sb.from('announcements').insert({ body });
+ if(r.error) return toast('送信失敗: ' + r.error.message);
+ closeM();
+ toast('お知らせを送信しました');
+ load();
+}
+
 function calView(){
  const y=calY,m=calM,first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
  const t=new Date(),ts=t.getFullYear()+'-'+p2(t.getMonth()+1)+'-'+p2(t.getDate());
@@ -531,15 +625,14 @@ function swipe(e,id){
   if(diff<-40)activeSwipeId=id;
  }
  currentTouchTarget=null;
- // スワイプの移動があった場合のみ再描画
  if(isMoved){
   render();
  }
 }
 function handleNumBoxTap(e,id){
  e.stopPropagation();
- if(e.type==='touchend') e.preventDefault(); // クリックの遅延判定と二重発火を防止
- if(isMoved) return; // スワイプ操作中の場合はモーダルを開かない
+ if(e.type==='touchend') e.preventDefault();
+ if(isMoved) return;
  if(activeSwipeId===id){
   activeSwipeId=null;
   render();
