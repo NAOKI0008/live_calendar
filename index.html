@@ -366,11 +366,11 @@ function render(){
  +'<button class="'+(currentGenre==='koyake'?'active':'')+'" onclick="currentGenre=\'koyake\';selDate=null;render()">こやけ</button>'
  +'</div>'
  +'<div class="hero-right">'
- +'<select class="year-select" onchange="selYear=this.value;render()">'+yearOptions+'</select>'
- +(host ? '<button class="setting-btn" onclick="siteM()">設定</button>' : '')
+ + (host ? '<button class="setting-btn" onclick="siteM()">設定</button>' : '')
+ +'<div class="me"><button class="chip" onclick="myPage()">'+av(prof)+esc(prof&&prof.username)+'</button></div>'
  +'<div class="hero-bottom-row">'
  +'<div class="info-btn-wrap">'+unreadBadgeHtml+'<button class="info-btn" onclick="openInfoModal()">info</button></div>'
- +'<div class="me"><button class="chip" onclick="myPage()">'+av(prof)+esc(prof&&prof.username)+'</button></div>'
+ +'<select class="year-select" onchange="selYear=this.value;render()">'+yearOptions+'</select>'
  +'</div>'
  +'</div>'
  +'</div>';
